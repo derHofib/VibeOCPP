@@ -1,0 +1,309 @@
+# Architekturvorschlag: CSMS-Backend + Operator-Frontend auf CitrineOS
+
+Status: **Entwurf zur Rückmeldung — noch keine Implementierung.**
+
+Grundlage: Quellcode-Analyse von `citrineos/citrineos-core` (Commit `main`, Fastify/TS-Monorepo)
+und `citrineos/citrineos-payment` (Python/FastAPI). Keine Live-Introspektion einer laufenden
+Instanz — die Testumgebung ist aus dieser Sandbox nicht erreichbar, siehe Hinweis unten.
+
+---
+
+## 0. Wichtiger Vorbehalt
+
+Diese Sandbox hat keinen Netzwerkzugriff auf deine lokale/private CitrineOS-Testumgebung
+(Ports 8080/8090/8081/8082/5432/5672 sind von hier aus nicht erreichbar). Alles unten beruht
+auf dem tatsächlichen Quellcode beider Repos — nicht auf Vermutung, aber auch nicht auf
+Beobachtung deiner konkreten Konfiguration (aktive Security-Profile, evtl. eigene
+Docker-Compose-Anpassungen, Datenmenge). Wo relevant, weise ich darauf hin, was du an deiner
+Instanz noch verifizieren solltest, bevor wir loslegen.
+
+---
+
+## 1. Zentrale Erkenntnis aus dem Quellcode
+
+**CitrineOS hat zwei verschiedene Integrationsebenen mit unterschiedlicher Stabilitätsgarantie:**
+
+| Kanal | Zweck | Öffentlicher Contract? |
+|---|---|---|
+| REST Data API (`/data/...`) | CRUD auf Domänendaten (Stationen, Tarife, Zertifikate, Variablen, Boot-Config) | Ja — Swagger-dokumentiert, versioniert |
+| REST Message API (`/ocpp/<version>/...`) | OCPP-Kommandos an Stationen senden | Ja — Swagger-dokumentiert |
+| **Subscriptions** (`POST /data/ocpprouter/subscription`) + **Callback-URLs** | Webhook-Push bei Verbindung/Nachrichten/Antworten | Ja — explizit für externe Konsumenten vorgesehen |
+| RabbitMQ (headers-Exchange `citrineos`) | Internes Transportmittel zwischen CitrineOS-eigenen Modulen | **Nein** — kein deklarierter öffentlicher Contract, rohes internes Envelope-Format |
+| Hasura/GraphQL (Port 8090) | Read-Layer für `apps/operator-ui` (offizielles UI) | Faktisch ja (stabile DB-Views), aber die *Metadata-Config* liegt im citrineos-core-Repo selbst |
+
+**Konsequenz für unsere Architektur:** Wir binden uns **nicht** direkt an RabbitMQ (das ist
+CitrineOS-internes Transportmittel, kein stabiler Contract — ein `git pull upstream` könnte
+das Envelope-Format brechen, ohne dass es als Breaking Change zählt). Stattdessen nutzen wir
+die **Subscription-/Callback-API**, die genau für diesen Zweck existiert.
+
+Für den Hasura-Layer bauen wir **eine eigene, zweite Hasura-Instanz** in unserem eigenen
+Compose-Stack, mit eigener Metadata (Permissions, JWT-Auth, Relationships), die read-only
+gegen dieselbe Postgres-DB wie CitrineOS läuft. Das kopiert keinen Code, patcht nichts, und
+lässt sich unabhängig vom `citrineos-core`-Repo pflegen. (Alternative: das offizielle
+`apps/operator-ui`-Setup nachbauen und dessen Hasura mitverwenden — verwerfe ich, weil das
+Metadata-Verzeichnis Teil des citrineos-core-Repos ist und uns wieder an dessen Struktur
+koppelt.)
+
+---
+
+## 2. Service-Topologie
+
+Ein separater Docker-Compose-Stack, komplett getrennt vom bestehenden Testaufbau:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Eigener Compose-Stack (neu)                                        │
+│                                                                       │
+│  ┌──────────────┐   ┌───────────────┐   ┌────────────────────────┐ │
+│  │  Frontend     │──▶│  BFF-Backend  │──▶│  Product-DB (Postgres) │ │
+│  │  React/Vite   │   │  NestJS/TS    │   │  users, roles, settings,│ │
+│  └──────────────┘   │               │   │  audit_log, testsuite_*,│ │
+│         │            │               │   │  tenants (Phase-1: 1)   │ │
+│         │            │               │   └────────────────────────┘ │
+│         │            │        │                                     │
+│         │            │        ├──REST──▶ CitrineOS Data/Message API │
+│         │            │        ├──Webhook◀── CitrineOS Subscriptions │
+│         │            │        └──REST──▶ citrineos-payment API      │
+│         │                                                            │
+│         └──GraphQL/WS (JWT)──▶ ┌──────────────┐                    │
+│                                 │  Eigene       │──▶ (read-only DB   │
+│                                 │  Hasura-      │     Rolle gegen    │
+│                                 │  Instanz      │     CitrineOS-DB)  │
+│                                 └──────────────┘                    │
+└─────────────────────────────────────────────────────────────────────┘
+                    │ REST/Webhook/DB (read, geteilte payment_*-Tabellen)
+                    ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  Bestehender CitrineOS-Stack (UNVERÄNDERT, git pull upstream bleibt  │
+│  schmerzfrei)                                                        │
+│                                                                       │
+│  citrine (Data+Message API :8080, WS :8081/:8082) · graphql-engine   │
+│  (:8090, deren EIGENE Hasura für apps/operator-ui, nutzen wir NICHT) │
+│  · ocpp-db (Postgres) · RabbitMQ · MinIO                             │
+│                                                                       │
+│  + citrineos-payment (Python/FastAPI) — separater Container,         │
+│    verbindet sich zwingend mit derselben ocpp-db (s. Punkt 4)        │
+│  + Directus — vom citrineos-payment-Code als Hard-Dependency          │
+│    vorausgesetzt (s. Punkt 4, offener Punkt)                         │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Backend-Framework-Empfehlung: NestJS (TypeScript).** Begründung: gleiche Sprache wie
+CitrineOS selbst (erleichtert das Lesen von dessen Typen/Schemas), eingebaute Module für
+Guards/RBAC, WebSocket-Gateways, Config-Module, Interceptors (praktisch für das Audit-Log als
+Cross-Cutting Concern), gute Testbarkeit. Alternative wäre Express/Fastify pur oder ein
+Python-Stack — sag Bescheid, falls du eine andere Präferenz hast, sonst gehe ich mit NestJS.
+
+---
+
+## 3. Datenmodell & Datenhoheit
+
+**Drei getrennte logische Datenbanken auf ggf. einem Postgres-Server:**
+
+1. **`citrine`** (bestehend, unverändert) — Source of Truth für OCPP-Domänendaten (Stationen,
+   Transaktionen, MeterValues, Boot, Variablen, Zertifikate, Tarife-für-OCPP). Wir schreiben
+   hier **nie direkt per SQL**, nur über die Data/Message API.
+2. **`citrine`, Tabellen mit `payment_`-Prefix** (bestehend durch citrineos-payment) — siehe
+   Punkt 4, das ist eine harte Kopplung, die wir nicht auflösen können, ohne citrineos-payment
+   zu patchen.
+3. **`csms_product`** (neu, unsere Produkt-DB) — Benutzer, Rollen, Settings (verschlüsselt),
+   Audit-Log, Testsuite-Reports, Live-Message-Monitor-Aufzeichnungen (sofern wir sie
+   persistieren wollen), `tenants`-Tabelle (Phase 1: genau eine Zeile), Vorbereitung für
+   Fahrerportal (Spalten/Enum-Werte angelegt, keine Endpunkte/UI).
+
+Wo unser Frontend Domänendaten braucht (Stationsname, Live-Status, Transaktionshistorie),
+lesen wir **nie** direkt aus `citrine` per SQL-Join gegen `csms_product`, sondern:
+- für Live-Reads/Subscriptions: über unsere eigene Hasura-Instanz (GraphQL, read-only)
+- für Schreibaktionen: über die CitrineOS Data/Message API
+
+`tenantId` ziehen wir konsequent durch unser eigenes Schema (jede Tabelle in `csms_product`,
+jede Query), auch wenn Phase 1 nur einen Tenant kennt. CitrineOS selbst kennt bereits
+`tenantId` als Konzept (Data-API-Querystring-Parameter, eigene `Tenants`/`TenantPartners`-
+Tabellen laut Hasura-Metadata) — das erleichtert eine spätere echte Multi-Tenancy, weil wir
+uns an ein bereits vorhandenes Konzept anlehnen statt eins zu erfinden.
+
+---
+
+## 4. Payment-Integration (citrineos-payment)
+
+**Was der Code bereits leistet** (siehe Analyse): Scan&Charge (QR-Code am Display via
+`SetDisplayMessage`) und Web-Portal-Checkout, Stripe Connect (Standard-Accounts, Direct
+Charges), vollständige Preisberechnung (Energie+Zeit+Session+Steuer+Fee) in
+`model/transaction_summary.py`, Event-Konsum über RabbitMQ, RemoteStart nach Zahlung über die
+Message API.
+
+**Was wir NICHT neu bauen:** die Stripe-Checkout-/Payment-Link-Logik, die Preisberechnung, den
+RabbitMQ-Consumer für Transaction-Events innerhalb des Payment-Flows.
+
+**Drei Punkte, die die Kopplung enger machen, als der ursprüngliche Prompt-Rahmen
+("eigene Produkt-DB getrennt von CitrineOS-Domänendaten") vorsieht — mit Vorschlag:**
+
+1. **citrineos-payment liest per SQLAlchemy direkt aus `citrine`-Tabellen** (`Evses`,
+   `Transactions`, `MessageInfos`), nicht nur über REST. Das ist Upstream-Design, nicht
+   unsere Entscheidung, und wir patchen citrineos-payment nicht. Konsequenz: der
+   Payment-Container braucht Netzwerk-/DB-Zugriff auf dieselbe Postgres-Instanz wie
+   CitrineOS-Core, nicht nur auf dessen REST-API. Das ist eine Ausnahme von "kein direkter
+   DB-Zugriff", die wir bewusst als Upstream-Gegebenheit akzeptieren — unser **eigenes**
+   BFF greift trotzdem nie direkt auf `citrine` zu.
+
+2. **citrineos-payment hat keine Admin-API** für Operators/Locations/Evses/Connectors/
+   Tarife — nur Lese-Endpunkte fürs Checkout-Frontend (`GET /evses/{id}`, `/locations/{id}`,
+   `/tariffs/{id}`) und `POST /checkouts/`. Es gibt keinen Weg, Tarife oder Stripe-Konfiguration
+   über eine API zu pflegen. **Vorschlag:** Unser BFF schreibt für diese Entitäten direkt in
+   die `payment_*`-Tabellen derselben `citrine`-DB (dasselbe Schema, das der Payment-Container
+   ohnehin selbst per `Base.metadata.create_all` anlegt). Das ist kein Patch am
+   citrineos-payment-Code, sondern Nutzung seines öffentlichen (wenn auch undokumentierten)
+   Datenschemas — die einzig praktikable Option ohne Fork. Dein SuperAdmin-Tarif-UI (Punkt 2
+   deiner Anforderung) landet also in dieser DB, nicht in unserer `csms_product`-DB.
+
+3. **Directus ist aktuell eine Hard-Dependency beim Start**, unabhängig vom
+   `CITRINEOS_SCAN_AND_CHARGE`-Feature-Flag: `main.py` instanziiert `DirectusIntegration`
+   synchron und wirft eine Exception, wenn der Login fehlschlägt — der Payment-Container
+   startet also gar nicht ohne erreichbares Directus, selbst wenn du nur den
+   Web-Portal-Checkout ohne QR-Code-Scan-Flow nutzen willst. Das ist ein Bug/eine
+   Design-Entscheidung im Upstream-Code, kein Implementierungsdetail, das wir umgehen können,
+   ohne zu patchen. **Vorschlag:** Wir nehmen Directus als weiteren Container in unseren
+   Compose-Stack auf (Bootstrap-Admin via `ADMIN_EMAIL`/`ADMIN_PASSWORD`-Env), ausschließlich
+   für den QR-Code-Datei-Upload — kein eigenständiges CMS für uns, kein Zugriff durch normale
+   Nutzer.
+
+   Zusätzlich: die Quittungsseite des Payment-Frontends (`Receipt.js`) ruft einen
+   `GET /receipts/{sessionId}`-Endpunkt, der im Backend nicht existiert — dieser Teil des
+   Checkout-Flows ist im aktuellen citrineos-payment-Release unvollständig. Das würde uns
+   betreffen, wenn wir dieses Checkout-Frontend an Endkunden zeigen.
+
+**Frage an dich (siehe unten, Rückfrage 2):** Soll Phase 1 den vollen Scan&Charge-Flow
+(QR-Code am Ladepunkt-Display) umfassen, oder reicht zunächst Web-Portal-Checkout (Link/QR
+extern bereitgestellt, kein `SetDisplayMessage`)? Directus brauchen wir in beiden Fällen wegen
+des Startup-Bugs, aber der Funktionsumfang, den wir im Betreiber-UI dafür abbilden müssen,
+unterscheidet sich.
+
+---
+
+## 5. Settings-Layer (Konfiguration raus aus der `.env`)
+
+**Nur echte Bootstrap-Werte bleiben in `.env`:**
+- Produkt-DB-Connection-String (`csms_product`)
+- JWT/Session-Secret
+- Master-Encryption-Key (AES-256-GCM, für Secrets in der `settings`-Tabelle)
+
+**Alles andere in einer versionierten `settings`-Tabelle** (`csms_product`):
+```
+settings(id, tenant_id, category, key, value_json, value_encrypted, type, version,
+         updated_by, updated_at)
+settings_history(... gleiche Felder, für Rollback)
+```
+- Typisierte Werte (string/number/bool/json/secret) mit Zod-Schema-Validierung pro Key.
+- `value_encrypted = true` → Wert liegt AES-verschlüsselt vor, API gibt ihn maskiert zurück
+  (`stripe_api_key: "sk_live_••••1234"`), niemals im Klartext, außer beim expliziten
+  „aufdecken"-Call mit erneuter Passwortbestätigung + Audit-Eintrag.
+- Config-Service hält einen In-Memory-Cache, invalidiert per DB-Trigger/NOTIFY oder
+  Polling-Intervall (Sekunden) → Laufzeit-Reload ohne Neustart für alles, was nicht
+  Container-Env ist (z. B. Stripe-Key-Wechsel: sofort aktiv; Postgres-Pool-Size-Änderung:
+  Neustart nötig, wird im UI als "Neustart erforderlich" markiert).
+- „Verbindung testen"-Buttons rufen serverseitig einen echten Health-Check gegen den
+  jeweiligen Dienst auf (z. B. Stripe `GET /v1/balance`, CitrineOS `GET /data/.../systemconfig`,
+  SMTP `NOOP`), Ergebnis + Latenz zurück, kein Secret im Response-Body.
+
+Die 12 Konfigurationsbereiche aus deiner Anforderung bilden sich 1:1 auf `category`-Werte in
+dieser Tabelle ab; „Infrastruktur" (Punkt 9) und „Datenbank/Backup" (Punkt 10) sind
+Sonderfälle ohne Settings-Charakter, dazu Punkt 7.
+
+---
+
+## 6. Rollenmodell & Auth
+
+- JWT-basierte Session (Access + Refresh Token), Rollen `SuperAdmin | Admin | Mitarbeiter`
+  als Enum in `csms_product.users`, plus **nicht genutzter** vierter Wert `Driver` bereits im
+  Enum angelegt (Vorbereitung Fahrerportal, keine Auth-Flows/Endpunkte dafür in Phase 1).
+- Serverseitige Durchsetzung über NestJS Guards + eine zentrale Policy-Definition (Aktion →
+  erlaubte Rollen), nicht verteilt über einzelne Controller. UI blendet zusätzlich aus, aber
+  das ist nur UX, nie die Sicherheitsgrenze.
+- Jede privilegierte Aktion (Settings-Änderung, Benutzerverwaltung, Remote-Kommando an
+  Station, Firmware-Rollout, Zertifikatsänderung, RFID-Whitelist-Änderung, Backup/Restore)
+  läuft durch einen Audit-Interceptor: wer, wann, was, alter/neuer Wert (als JSON-Diff),
+  IP/User-Agent.
+
+---
+
+## 7. Infrastruktur-Tab (Container-Status, Logs, Restarts)
+
+**Sicherheitsrelevante Entscheidung, noch offen — siehe Rückfrage 3.** Zwei Optionen:
+
+**A) Dediziertes Ops-Agent-Microservice (empfohlen).** Ein minimaler eigener Service mit
+Zugriff auf den Docker-Socket, der **ausschließlich** eine feste Whitelist von Aktionen als
+eigene, typisierte Endpunkte exponiert (`POST /ops/restart/{service}` mit `service` aus einer
+Enum-Liste, `GET /ops/status`, `GET /ops/logs/{service}?since=...`) — kein generischer
+Shell-/Exec-Zugriff, kein beliebiger Docker-Befehl. Das BFF selbst bekommt **keinen**
+Docker-Socket-Zugriff, sondern spricht nur mit diesem Agenten. Größerer Implementierungsaufwand,
+aber deutlich kleinerer Blast-Radius, falls das BFF (das öffentlich über HTTPS erreichbar ist)
+kompromittiert wird.
+
+**B) BFF bekommt Docker-Socket direkt gemountet.** Einfacher zu bauen, aber jede
+Remote-Code-Execution-Lücke im BFF wäre dann gleichbedeutend mit vollem Docker-Host-Zugriff.
+
+Ich empfehle A, auch wenn es mehr Aufwand ist — bei einem Produkt, das produktiv
+Ladeinfrastruktur steuert, ist der Docker-Socket im öffentlich erreichbaren Service ein zu
+großes Risiko für den Zeitgewinn.
+
+---
+
+## 8. OCPP-Controller-Testsuite
+
+- Ausführung: BFF sendet die Sequenz (`BootNotification` wird nicht aktiv gesendet, das macht
+  die Station selbst — aber `Heartbeat`-Trigger, `GetVariables`/`GetConfiguration`,
+  `RemoteStart`/`RemoteStop`, `Reset`, `DataTransfer` etc.) über die CitrineOS Message API.
+- Antworten/Ereignisse (inkl. `StatusNotification`, `TransactionEvent`/`StartTransaction`,
+  `MeterValues`, die die Station **von sich aus** sendet) fängt das BFF über eine **eigene
+  Subscription** (`POST /data/ocpprouter/subscription`, `onMessage`) für die Dauer des
+  Testlaufs ab und matched sie per Korrelation (Aktion + Zeitfenster + Station-Identifier;
+  die Message-API liefert nur die Zustellbestätigung, nicht die OCPP-Antwort selbst — das
+  ist ein wichtiger Unterschied zur Prompt-Annahme "Request/Response inkl. Timing" auf HTTP-
+  Ebene, faktisch läuft das über den Subscription-Kanal asynchron mit).
+- Jeder Schritt: rohe OCPP-Payload (Request+Response), Timing, Pass/Fail/Nicht unterstützt,
+  Klartext-Fehler (z. B. `FormatViolation` → "Die Station hat `idTag` bei StartTransaction
+  nicht akzeptiert").
+- Ergebnis-Speicherung: `csms_product.testsuite_runs` + `testsuite_steps`, referenziert
+  Hersteller/Modell/Firmware/OCPP-Version (freie Texteingabe oder aus dem `BootNotification`-
+  Payload der Station übernommen, falls vorhanden).
+- Live-Message-Monitor ist technisch dieselbe Subscription-Infrastruktur, nur dauerhaft statt
+  testlaufgebunden, mit Filter/Export — als eigenständiges Feature unabhängig von der
+  Testsuite nutzbar.
+
+---
+
+## 9. Frontend
+
+React + TS + Vite + Tailwind + shadcn/ui-Basis mit eigenen Design-Tokens (keine
+Standard-shadcn-Optik). TanStack Query (Server-State) + TanStack Table. react-i18next,
+Deutsch Standard, Englisch von Anfang an. Dark Mode. Kartenansicht (Google Maps oder
+MapLibre/OSM, je nach Settings-Konfiguration) + gleichwertige Tabellenansicht.
+
+**Live-Updates — offene Entscheidung, siehe Rückfrage 1:**
+
+**A) Frontend spricht für Reads/Subscriptions direkt mit unserer eigenen Hasura-Instanz**
+(GraphQL over WebSocket, JWT-Auth-Mode, unsere Rollen SuperAdmin/Admin/Mitarbeiter auf
+Hasura-Rollen mit Row-/Column-Permissions gemappt). Vorteil: Hasura übernimmt Subscriptions
+nativ, kein eigener WebSocket-Gateway-Code nötig, sehr performant. Nachteil: zweiter
+Vertrauensanker neben dem BFF (Hasura muss dieselben JWTs validieren, Permissions müssen in
+zwei Systemen — NestJS-Guards fürs BFF, Hasura-Permissions fürs GraphQL — konsistent gehalten
+werden).
+
+**B) Alles läuft über einen WebSocket-Gateway im BFF**, das BFF abonniert seinerseits Hasura
+oder die CitrineOS-Subscriptions und reicht Updates gefiltert an autorisierte Clients weiter.
+Vorteil: eine einzige Autorisierungsstelle. Nachteil: mehr Code, das BFF wird zum
+Skalierungs-Flaschenhals für Live-Daten.
+
+Ich tendiere zu A für reine Lesedaten/Live-Status (Standard-Pattern, Hasura ist genau dafür
+gebaut) und B nur für alles, was eine Aktion auslöst (Remote-Kommandos, Settings-Änderungen) —
+aber das ist eine Architekturentscheidung mit Sicherheitsimplikationen, die ich nicht
+stillschweigend treffen möchte.
+
+---
+
+## 10. Offene Rückfragen
+
+Drei Entscheidungen wirken sich spürbar auf Aufwand/Sicherheitsmodell aus — dazu bitte ich um
+Rückmeldung, bevor ich zu implementieren anfange (die restlichen Punkte oben sind Vorschläge,
+aber keine harten Weichenstellungen — dort baue ich mit den genannten Annahmen, wenn kein
+Widerspruch kommt).
