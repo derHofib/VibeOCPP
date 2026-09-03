@@ -393,6 +393,25 @@ Alle übrigen Punkte oben sind die Arbeitsgrundlage für die Implementierung.
    Docker-Daemon bzw. die tatsächliche `docker-compose.yml`-Verkabelung (Labels, Netzwerk,
    Read-only-Socket-Mount) — vor Produktivbetrieb mit einem echten `docker compose up` prüfen.
    Details in `ops-agent/README.md`.
-7. Frontend (React/Vite), beginnend mit Auth + Grundgerüst, dann Domänenansichten.
+7. **Frontend (React/Vite) — Grundgerüst** ✅ erledigt, Domänenansichten folgen: Vite + TS +
+   Tailwind v4 mit eigenem Design-Token-Set (`frontend/src/styles/tokens.css` — bewusst nicht die
+   Standard-shadcn-Optik), eigene UI-Primitiven (Button/Input/Card/StatusBadge, CVA-basiert wie
+   shadcn generiert, aber selbst geschrieben). `AuthProvider` implementiert den vollen
+   Login/Refresh/Logout-Flow gegen `/auth/*` (Access-Token im Speicher, Refresh-Token in
+   `localStorage`, ein gemeinsamer In-Flight-Refresh bei parallelen 401ern, stiller
+   Session-Resume nach Reload). RBAC-gesteuertes Routing (`ProtectedRoute` + `lib/roles.ts`,
+   spiegelt `backend/src/common/roles.enum.ts`) blendet Nav-Punkte aus und leitet bei
+   unzureichender Rolle um — reine UI-Bequemlichkeit, jede privilegierte Aktion bleibt
+   serverseitig durch die BFF-Guards abgesichert. react-i18next mit DE/EN (Browser-Erkennung,
+   persistiert), Dark Mode über `data-theme`-Attribut mit System-Fallback. Domänenansichten
+   (Stationen, Transaktionen, Testsuite, Live-Monitor, Einstellungen, Benutzer, Infrastruktur)
+   sind vorerst `PlaceholderPage`-Stubs — Routing/Guards/Nav sind aber vollständig verdrahtet.
+   Getestet: 24 Unit-Tests (Vitest + Testing Library, u. a. der komplette Auth-Flow gegen
+   gemocktes `fetch`, RBAC-Redirects, Theme-Persistenz), `pnpm build`/`pnpm lint` grün. Zusätzlich
+   end-to-end in einem echten Chromium (Playwright) gegen einen echten laufenden Backend- +
+   Postgres-Prozess verifiziert: Login als SuperAdmin und als Mitarbeiter, korrekte
+   Nav-Sichtbarkeit je Rolle, Redirect bei direktem Aufruf einer SuperAdmin-Route als
+   Mitarbeiter, Dark Mode und DE/EN-Umschaltung optisch geprüft (Screenshots). Details in
+   `frontend/README.md`.
 
 Jedes Inkrement wird einzeln committet und ist für sich lauffähig/testbar.

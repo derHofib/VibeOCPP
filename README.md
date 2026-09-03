@@ -17,8 +17,9 @@ backend/    NestJS BFF — auth, RBAC, encrypted settings store, audit log,
             CitrineOS Data/Message API clients + webhook receiver,
             OCPP testsuite + Live-Message-Monitor, payment/tariff
             master-data management against citrineos-payment's own DB
-            (this is the only implemented package so far)
-frontend/   React operator UI (not yet implemented)
+frontend/   React operator UI — auth, RBAC-gated routing/nav, i18n
+            (DE/EN), dark mode, own design tokens — see
+            frontend/README.md. Domain views are still placeholders.
 ops-agent/  Whitelisted container-ops microservice — status/logs/restart for
             a fixed set of known services, nothing else — see
             ops-agent/README.md
@@ -49,6 +50,14 @@ cp .env.example .env   # point DATABASE_URL at a local Postgres
 pnpm db:migrate
 SEED_SUPERADMIN_PASSWORD='...' pnpm db:seed   # creates the first SuperAdmin login
 pnpm start:dev
+```
+
+In a second terminal, the operator UI (see [frontend/README.md](frontend/README.md)):
+
+```sh
+cd frontend
+pnpm dev
+# http://localhost:5173 — proxies /api/* to the backend on :3000
 ```
 
 Before any `/citrineos/*` endpoint works, configure the connection as SuperAdmin
@@ -127,4 +136,7 @@ pnpm test:e2e   # exercises real HTTP + a real Postgres database
 
 cd ../ops-agent
 pnpm test       # unit tests, mocked dockerode — see ops-agent/README.md
+
+cd ../frontend
+pnpm test       # vitest + Testing Library, jsdom — see frontend/README.md
 ```

@@ -1,0 +1,134 @@
+/*
+ * Own design-token set — deliberately not shadcn's default zinc/slate
+ * "new-york" look. Identity: deep petrol/teal as the primary surface color
+ * (control-room, not generic SaaS blue), amber as the single accent used
+ * sparingly for calls to action and "live" indicators (energy/charging
+ * association without leaning on green, which is reserved for status).
+ *
+ * Status colors are chosen to stay distinguishable for the common forms of
+ * color blindness (deuteranopia/protanopia): success uses a blue-leaning
+ * green, danger a orange-leaning red, warning amber, info blue — verified
+ * against the Coblis simulator by eye during design, and never used as the
+ * *only* signal (see StatusBadge, which always pairs color with an icon and
+ * text).
+ */
+
+:root {
+  --color-bg: oklch(98.5% 0.003 250);
+  --color-surface: oklch(100% 0 0);
+  --color-surface-raised: oklch(100% 0 0);
+  --color-border: oklch(90% 0.006 250);
+  --color-border-strong: oklch(80% 0.008 250);
+
+  --color-text: oklch(22% 0.02 255);
+  --color-text-muted: oklch(46% 0.02 255);
+  --color-text-inverted: oklch(98% 0.005 255);
+
+  --color-primary: oklch(32% 0.06 235);
+  --color-primary-foreground: oklch(98% 0.005 255);
+  --color-primary-hover: oklch(26% 0.06 235);
+
+  --color-accent: oklch(78% 0.16 75);
+  --color-accent-foreground: oklch(20% 0.03 75);
+  --color-accent-hover: oklch(72% 0.17 75);
+
+  --color-success: oklch(58% 0.13 165);
+  --color-success-foreground: oklch(98% 0.01 165);
+  --color-success-bg: oklch(94% 0.04 165);
+
+  --color-warning: oklch(74% 0.15 80);
+  --color-warning-foreground: oklch(22% 0.04 80);
+  --color-warning-bg: oklch(95% 0.05 80);
+
+  --color-danger: oklch(56% 0.19 30);
+  --color-danger-foreground: oklch(98% 0.01 30);
+  --color-danger-bg: oklch(94% 0.05 30);
+
+  --color-info: oklch(55% 0.13 250);
+  --color-info-foreground: oklch(98% 0.01 250);
+  --color-info-bg: oklch(94% 0.03 250);
+
+  --color-focus-ring: oklch(60% 0.15 235);
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  --font-sans:
+    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) {
+    --color-bg: oklch(18% 0.012 255);
+    --color-surface: oklch(22% 0.014 255);
+    --color-surface-raised: oklch(26% 0.016 255);
+    --color-border: oklch(32% 0.016 255);
+    --color-border-strong: oklch(42% 0.018 255);
+
+    --color-text: oklch(94% 0.006 255);
+    --color-text-muted: oklch(72% 0.012 255);
+    --color-text-inverted: oklch(18% 0.012 255);
+
+    --color-primary: oklch(78% 0.09 225);
+    --color-primary-foreground: oklch(16% 0.02 225);
+    --color-primary-hover: oklch(84% 0.09 225);
+
+    --color-success: oklch(72% 0.14 165);
+    --color-success-foreground: oklch(16% 0.03 165);
+    --color-success-bg: oklch(28% 0.06 165);
+
+    --color-warning: oklch(80% 0.14 80);
+    --color-warning-foreground: oklch(18% 0.03 80);
+    --color-warning-bg: oklch(30% 0.06 80);
+
+    --color-danger: oklch(68% 0.17 30);
+    --color-danger-foreground: oklch(16% 0.03 30);
+    --color-danger-bg: oklch(30% 0.08 30);
+
+    --color-info: oklch(70% 0.11 250);
+    --color-info-foreground: oklch(16% 0.02 250);
+    --color-info-bg: oklch(28% 0.05 250);
+
+    --color-focus-ring: oklch(78% 0.09 225);
+  }
+}
+
+:root[data-theme='dark'] {
+  --color-bg: oklch(18% 0.012 255);
+  --color-surface: oklch(22% 0.014 255);
+  --color-surface-raised: oklch(26% 0.016 255);
+  --color-border: oklch(32% 0.016 255);
+  --color-border-strong: oklch(42% 0.018 255);
+
+  --color-text: oklch(94% 0.006 255);
+  --color-text-muted: oklch(72% 0.012 255);
+  --color-text-inverted: oklch(18% 0.012 255);
+
+  --color-primary: oklch(78% 0.09 225);
+  --color-primary-foreground: oklch(16% 0.02 225);
+  --color-primary-hover: oklch(84% 0.09 225);
+
+  --color-accent: oklch(78% 0.16 75);
+  --color-accent-foreground: oklch(18% 0.03 75);
+  --color-accent-hover: oklch(84% 0.15 75);
+
+  --color-success: oklch(72% 0.14 165);
+  --color-success-foreground: oklch(16% 0.03 165);
+  --color-success-bg: oklch(28% 0.06 165);
+
+  --color-warning: oklch(80% 0.14 80);
+  --color-warning-foreground: oklch(18% 0.03 80);
+  --color-warning-bg: oklch(30% 0.06 80);
+
+  --color-danger: oklch(68% 0.17 30);
+  --color-danger-foreground: oklch(16% 0.03 30);
+  --color-danger-bg: oklch(30% 0.08 30);
+
+  --color-info: oklch(70% 0.11 250);
+  --color-info-foreground: oklch(16% 0.02 250);
+  --color-info-bg: oklch(28% 0.05 250);
+
+  --color-focus-ring: oklch(78% 0.09 225);
+}

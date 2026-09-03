@@ -1,0 +1,39 @@
+{
+  "appName": "VibeOCPP",
+  "nav": {
+    "dashboard": "Übersicht",
+    "stations": "Ladestationen",
+    "transactions": "Transaktionen",
+    "testsuite": "Testsuite",
+    "monitor": "Live-Monitor",
+    "settings": "Einstellungen",
+    "users": "Benutzer",
+    "ops": "Infrastruktur"
+  },
+  "theme": {
+    "light": "Hell",
+    "dark": "Dunkel",
+    "system": "System"
+  },
+  "language": {
+    "de": "Deutsch",
+    "en": "Englisch"
+  },
+  "actions": {
+    "logout": "Abmelden",
+    "retry": "Erneut versuchen",
+    "cancel": "Abbrechen",
+    "save": "Speichern"
+  },
+  "connection": {
+    "connected": "Verbunden",
+    "connecting": "Verbindung wird hergestellt…",
+    "disconnected": "Verbindung getrennt"
+  },
+  "loading": "Wird geladen…",
+  "empty": "Keine Daten vorhanden.",
+  "error": {
+    "generic": "Etwas ist schiefgelaufen.",
+    "details": "Technische Details"
+  }
+}
