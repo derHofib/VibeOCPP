@@ -5,6 +5,7 @@ const validEnv = {
   JWT_ACCESS_SECRET: 'a'.repeat(32),
   JWT_REFRESH_SECRET: 'b'.repeat(32),
   SETTINGS_MASTER_KEY: Buffer.alloc(32, 1).toString('base64'),
+  OPS_AGENT_SHARED_SECRET: 'c'.repeat(16),
   PORT: '3000',
 };
 
@@ -30,5 +31,16 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...validEnv, JWT_ACCESS_SECRET: 'short' })).toThrow(
       /JWT_ACCESS_SECRET/,
     );
+  });
+
+  it('rejects an OPS_AGENT_SHARED_SECRET shorter than 16 characters', () => {
+    expect(() => validateEnv({ ...validEnv, OPS_AGENT_SHARED_SECRET: 'short' })).toThrow(
+      /OPS_AGENT_SHARED_SECRET/,
+    );
+  });
+
+  it('defaults OPS_AGENT_URL to the internal Compose service name', () => {
+    const result = validateEnv(validEnv);
+    expect(result.OPS_AGENT_URL).toBe('http://ops-agent:3100');
   });
 });

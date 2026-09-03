@@ -10,15 +10,17 @@ ARG HTTPS_PROXY=""
 ARG NODE_EXTRA_CA_CERTS=""
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY backend/package.json ./backend/
+COPY ops-agent/package.json ./ops-agent/
 # The bracket glob is the standard "optional COPY" trick: it copies the file
 # when present and is a silent no-op (not an error) when it's not, so this
 # still builds without it in every environment that isn't behind our proxy.
 COPY backend/ca-bundle.cr[t] ./
-# Placeholder manifests so pnpm can resolve the workspace without the other
-# packages' full source (keeps this layer cacheable independent of them).
-RUN mkdir -p frontend ops-agent \
-  && echo '{"name":"frontend","private":true}' > frontend/package.json \
-  && echo '{"name":"ops-agent","private":true}' > ops-agent/package.json
+# Placeholder manifest so pnpm can resolve the workspace without frontend's
+# full source (keeps this layer cacheable independent of it). ops-agent has
+# a real package.json above — it's a separate deployable with its own
+# Dockerfile, but pnpm still needs its manifest to resolve the workspace.
+RUN mkdir -p frontend \
+  && echo '{"name":"frontend","private":true}' > frontend/package.json
 RUN if [ -f ./ca-bundle.crt ]; then export NODE_EXTRA_CA_CERTS="$(pwd)/ca-bundle.crt"; fi; \
     pnpm install --frozen-lockfile --filter backend...
 

@@ -19,7 +19,9 @@ backend/    NestJS BFF — auth, RBAC, encrypted settings store, audit log,
             master-data management against citrineos-payment's own DB
             (this is the only implemented package so far)
 frontend/   React operator UI (not yet implemented)
-ops-agent/  Whitelisted container-ops microservice (not yet implemented)
+ops-agent/  Whitelisted container-ops microservice — status/logs/restart for
+            a fixed set of known services, nothing else — see
+            ops-agent/README.md
 hasura/     Metadata for our own read-only Hasura mirror of CitrineOS-core
             data — see hasura/README.md
 docs/       Architecture proposal and other design docs
@@ -107,10 +109,22 @@ docker compose --profile hasura up --build
 # console at http://localhost:8091, protected by HASURA_GRAPHQL_ADMIN_SECRET
 ```
 
+`ops-agent` (container status/logs/restart, SuperAdmin-only — see
+[ops-agent/README.md](ops-agent/README.md) for the whitelist/security model)
+starts with the base stack, no profile needed:
+
+```sh
+curl -s localhost:3000/ops/status -H "Authorization: Bearer $TOKEN"
+curl -s -X POST localhost:3000/ops/restart/hasura -H "Authorization: Bearer $TOKEN"
+```
+
 ## Testing
 
 ```sh
 cd backend
 pnpm test       # unit tests (mocked dependencies)
 pnpm test:e2e   # exercises real HTTP + a real Postgres database
+
+cd ../ops-agent
+pnpm test       # unit tests, mocked dockerode — see ops-agent/README.md
 ```

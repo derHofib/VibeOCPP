@@ -372,7 +372,27 @@ Alle übrigen Punkte oben sind die Arbeitsgrundlage für die Implementierung.
    reserviertes Rollenwort (→ `csms_admin`, `toHasuraRole()`-Mapping im Backend), und eine
    `VariableAttributes`-Relation auf eine nicht exponierte `Components`-Tabelle wurde entfernt.
    Details und Grenzen (kein Test gegen eine echte CitrineOS-DB) in `hasura/README.md`.
-6. Ops-Agent-Service.
+6. **Ops-Agent-Service** ✅ erledigt: eigenständiges, minimal gehaltenes Microservice
+   (`ops-agent/`, eigenes Package/eigener Dockerfile), das als einziger Dienst im gesamten Stack
+   Docker-Socket-Zugriff bekommt — `backend` selbst nie. Genau drei Aktionen gegen eine feste
+   Liste von fünf bekannten Service-Namen (`ALLOWED_SERVICES` in `src/whitelist.ts`, 1:1
+   `docker-compose.yml`-Servicenamen): Status, Logs, Restart — keine generische
+   Shell-/Exec-Route, jede `:service`-Angabe wird gegen die Whitelist geprüft, bevor sie
+   `dockerode` überhaupt erreicht (genau die im ursprünglichen Auftrag geforderte „keine
+   beliebige Shell-Ausführung, nur eine fest definierte Whitelist von Aktionen"). Container werden
+   über das `com.docker.compose.service`-Label gefunden, nie über einen selbst gebauten
+   Containernamen. Kein öffentlicher Port in `docker-compose.yml` — nur über das interne
+   Compose-Netz von `backend` erreichbar, zusätzlich per Shared-Secret authentisiert
+   (`OPS_AGENT_SHARED_SECRET`, Bootstrap-`.env`-Wert wie die JWT-Secrets: der Ops-Agent hat
+   keinerlei Datenbankzugriff, könnte also gar keinen `settings`-Eintrag lesen). Backend-seitig
+   `backend/src/ops/` (`OpsController`/`OpsAgentClient`) — SuperAdmin-only, `restart`
+   `@Audited()`. Getestet mit gemocktem `dockerode` (kein laufender Docker-Daemon in dieser
+   Sandbox — siehe §0): Whitelist-Ablehnung inkl. Shell-Metazeichen/Pfad-Traversal-Versuchen,
+   konstante-Zeit-Secret-Prüfung, Label-basiertes Container-Lookup, Demuxing des rohen
+   Docker-Log-Streams. `pnpm build`/`pnpm lint` grün. Nicht verifiziert: gegen einen echten
+   Docker-Daemon bzw. die tatsächliche `docker-compose.yml`-Verkabelung (Labels, Netzwerk,
+   Read-only-Socket-Mount) — vor Produktivbetrieb mit einem echten `docker compose up` prüfen.
+   Details in `ops-agent/README.md`.
 7. Frontend (React/Vite), beginnend mit Auth + Grundgerüst, dann Domänenansichten.
 
 Jedes Inkrement wird einzeln committet und ist für sich lauffähig/testbar.

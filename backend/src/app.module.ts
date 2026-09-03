@@ -11,6 +11,7 @@ import { SettingsModule } from './settings/settings.module.js';
 import { CitrineOsModule } from './citrineos/citrineos.module.js';
 import { TestSuiteModule } from './testsuite/testsuite.module.js';
 import { PaymentModule } from './payment/payment.module.js';
+import { OpsModule } from './ops/ops.module.js';
 import { validateEnv } from './config/env.validation.js';
 
 @Module({
@@ -25,6 +26,7 @@ import { validateEnv } from './config/env.validation.js';
     CitrineOsModule,
     TestSuiteModule,
     PaymentModule,
+    OpsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

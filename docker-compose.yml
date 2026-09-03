@@ -4,10 +4,10 @@
 # file: it keeps running unmodified from its own repo/compose, and this
 # stack reaches it only over the network (Data/Message API, Subscriptions).
 #
-# Increments 1-5 (so far): product database + BFF backend, plus the
-# optional citrineos-payment/Directus and own-Hasura-instance services below
-# (behind Compose profiles — see docs/architecture-proposal.md §4/§9/§11 for
-# why they're needed at all). Still to come: frontend, ops-agent.
+# Increments 1-6 (so far): product database + BFF backend, the ops-agent
+# below, plus the optional citrineos-payment/Directus and own-Hasura-instance
+# services (behind Compose profiles — see docs/architecture-proposal.md
+# §4/§9/§11 for why they're needed at all). Still to come: frontend.
 
 services:
   product-db:
@@ -46,9 +46,31 @@ services:
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET in .env}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in .env}
       SETTINGS_MASTER_KEY: ${SETTINGS_MASTER_KEY:?set SETTINGS_MASTER_KEY in .env}
+      OPS_AGENT_URL: http://ops-agent:3100
+      OPS_AGENT_SHARED_SECRET: ${OPS_AGENT_SHARED_SECRET:?set OPS_AGENT_SHARED_SECRET in .env}
       PORT: "3000"
     ports:
       - "${BACKEND_PORT:-3000}:3000"
+
+  # Whitelisted container-ops microservice — see ops-agent/README.md. Has
+  # Docker socket access (needed to inspect/restart the OTHER containers in
+  # this stack), which `backend` itself never gets; `backend` reaches it only
+  # over the internal Compose network, authenticated by
+  # OPS_AGENT_SHARED_SECRET. No public port: this is deliberately
+  # unreachable from outside the Compose network.
+  ops-agent:
+    build:
+      context: .
+      dockerfile: ops-agent/Dockerfile
+      network: ${DOCKER_BUILD_NETWORK:-default}
+      args:
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+    restart: unless-stopped
+    environment:
+      OPS_AGENT_SHARED_SECRET: ${OPS_AGENT_SHARED_SECRET:?set OPS_AGENT_SHARED_SECRET in .env}
+      PORT: "3100"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
   # ---- Optional: citrineos-payment + Directus (`docker compose --profile payment up`) ----
   #
