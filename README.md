@@ -14,7 +14,8 @@ layer, role model, and the incremental build plan).
 
 ```
 backend/    NestJS BFF — auth, RBAC, encrypted settings store, audit log,
-            CitrineOS Data/Message API clients + webhook receiver
+            CitrineOS Data/Message API clients + webhook receiver,
+            OCPP testsuite + Live-Message-Monitor
             (this is the only implemented package so far)
 frontend/   React operator UI (not yet implemented)
 ops-agent/  Whitelisted container-ops microservice (not yet implemented)
@@ -65,6 +66,15 @@ for kv in dataApiUrl:string:http://localhost:8080 \
     -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
     -d "{\"type\":\"$type\",\"value\":\"$value\"}"
 done
+```
+
+Once configured, run the testsuite against a connected station:
+
+```sh
+curl -s -X POST localhost:3000/testsuite/runs \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"ocppConnectionName":"<station id>","ocppVersion":"2","manufacturer":"Bender","model":"CC612"}'
+# poll GET /testsuite/runs/<id> for live step results
 ```
 
 ## Testing

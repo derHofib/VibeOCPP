@@ -335,7 +335,19 @@ Alle übrigen Punkte oben sind die Arbeitsgrundlage für die Implementierung.
    (Reset/TriggerMessage: SuperAdmin/Admin). Getestet gegen einen echten HTTP-Server (Fake
    CitrineOS in den E2E-Tests) — nicht gegen die echte CitrineOS-Instanz, da diese aus der
    Sandbox nicht erreichbar ist; vor dem produktiven Einsatz gegen die reale Instanz verifizieren.
-3. Testsuite-Feature (Backend-Logik) + Live-Message-Monitor (baut auf `citrineos_message_log` auf).
+3. **Testsuite-Feature + Live-Message-Monitor** ✅ erledigt (Backend-Logik, kein Frontend):
+   fester Schrittkatalog (`testsuite-step-catalog.ts`) mit drei Schrittarten — `trigger`
+   (TriggerMessage senden, auf die eigenständige Folgenachricht der Station warten),
+   `command` (CSMS-Kommando senden, Antwort über eine pro-Schritt-`callbackUrl` korrelieren —
+   im citrineos-core-Quellcode verifiziert: CitrineOS schlüsselt den Callback exakt über die
+   OCPP-`messageId`, präziser als Aktionsnamen-Matching) und `observe` (nur warten, für
+   Aktionen wie Authorize/TransactionEvent, die die Station nur bei echter Bedienung sendet).
+   Hintergrund-Ausführung pro Lauf (Fire-and-forget im Prozess, kein Job-Queue — überlebt
+   keinen Neustart, für dieses Inkrement bewusst akzeptiert). Kompatibilitätsmatrix
+   (neuester Lauf je Hersteller/Modell/Firmware/OCPP-Version) sowie Live-Message-Monitor mit
+   Filtern (Station/Aktion/Richtung/Zeitraum) und CSV-Export, aufbauend auf
+   `citrineos_message_log` aus Inkrement 2. Getestet inkl. eines echten Laufs gegen einen
+   simulierten CitrineOS-HTTP-Server (Trigger-, Command- und Skip-Ergebnisse alle verifiziert).
 4. Payment-Integration (citrineos-payment-Client, `payment_*`-Schema-Zugriff, Directus-Setup).
 5. Eigene Hasura-Instanz + Metadata/Permissions passend zum Rollenmodell.
 6. Ops-Agent-Service.

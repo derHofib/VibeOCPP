@@ -29,5 +29,15 @@ import { TenantsModule } from '../tenants/tenants.module.js';
     CitrineOsMessageLogService,
     CitrineOsSubscriptionService,
   ],
+  // Exported so the testsuite module (which orchestrates commands and
+  // reads the message log to build its own results) can inject these
+  // directly instead of duplicating them.
+  exports: [
+    CitrineOsConfigService,
+    CitrineOsDataApiService,
+    CitrineOsMessageApiService,
+    CitrineOsMessageLogService,
+    CitrineOsSubscriptionService,
+  ],
 })
 export class CitrineOsModule {}

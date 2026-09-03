@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { CitrineOsModule } from './citrineos/citrineos.module.js';
+import { TestSuiteModule } from './testsuite/testsuite.module.js';
 import { validateEnv } from './config/env.validation.js';
 
 @Module({
@@ -21,6 +22,7 @@ import { validateEnv } from './config/env.validation.js';
     UsersModule,
     SettingsModule,
     CitrineOsModule,
+    TestSuiteModule,
   ],
   controllers: [AppController],
   providers: [AppService],

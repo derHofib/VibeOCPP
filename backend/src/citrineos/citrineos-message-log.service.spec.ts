@@ -5,7 +5,8 @@ import type { PrismaService } from '../prisma/prisma.service.js';
 function makePrismaMock() {
   const create = vi.fn().mockResolvedValue({ id: 'log-1' });
   const findMany = vi.fn().mockResolvedValue([]);
-  return { citrineOsMessageLog: { create, findMany } } as unknown as PrismaService;
+  const findFirst = vi.fn().mockResolvedValue(null);
+  return { citrineOsMessageLog: { create, findMany, findFirst } } as unknown as PrismaService;
 }
 
 describe('CitrineOsMessageLogService', () => {
@@ -51,5 +52,54 @@ describe('CitrineOsMessageLogService', () => {
 
     const call = (prisma as any).citrineOsMessageLog.findMany.mock.calls[0][0];
     expect(call.take).toBe(100);
+  });
+
+  it('filters by action via the JSON info.action path and by origin', async () => {
+    const prisma = makePrismaMock();
+    const service = new CitrineOsMessageLogService(prisma);
+
+    await service.list('tenant-1', { action: 'BootNotification', origin: 'ChargingStation' });
+
+    const call = (prisma as any).citrineOsMessageLog.findMany.mock.calls[0][0];
+    expect(call.where).toMatchObject({
+      tenantId: 'tenant-1',
+      origin: 'ChargingStation',
+      info: { path: ['action'], equals: 'BootNotification' },
+    });
+  });
+
+  it('filters by a receivedAt range when after/before are given', async () => {
+    const prisma = makePrismaMock();
+    const service = new CitrineOsMessageLogService(prisma);
+    const after = new Date('2026-01-01T00:00:00Z');
+    const before = new Date('2026-01-02T00:00:00Z');
+
+    await service.list('tenant-1', { after, before });
+
+    const call = (prisma as any).citrineOsMessageLog.findMany.mock.calls[0][0];
+    expect(call.where.receivedAt).toEqual({ gt: after, lt: before });
+  });
+
+  it('findFirstAfter queries ascending (oldest match first) unlike list (newest first)', async () => {
+    const prisma = makePrismaMock();
+    const service = new CitrineOsMessageLogService(prisma);
+    const after = new Date('2026-01-01T00:00:00Z');
+
+    await service.findFirstAfter('tenant-1', {
+      ocppConnectionName: 'stationA',
+      action: 'Heartbeat',
+      origin: 'ChargingStation',
+      after,
+    });
+
+    const call = (prisma as any).citrineOsMessageLog.findFirst.mock.calls[0][0];
+    expect(call.orderBy).toEqual({ receivedAt: 'asc' });
+    expect(call.where).toMatchObject({
+      tenantId: 'tenant-1',
+      ocppConnectionName: 'stationA',
+      origin: 'ChargingStation',
+      info: { path: ['action'], equals: 'Heartbeat' },
+      receivedAt: { gt: after },
+    });
   });
 });

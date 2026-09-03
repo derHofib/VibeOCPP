@@ -42,6 +42,7 @@ export class CitrineOsMessageApiService {
     productTenantId: string,
     stationIdentifiers: string[],
     request: Record<string, unknown>,
+    callbackUrl?: string,
   ) {
     return this.sendCommand(
       productTenantId,
@@ -49,6 +50,7 @@ export class CitrineOsMessageApiService {
       'requeststarttransaction',
       stationIdentifiers,
       request,
+      callbackUrl,
     );
   }
 
@@ -56,6 +58,7 @@ export class CitrineOsMessageApiService {
     productTenantId: string,
     stationIdentifiers: string[],
     request: { transactionId: string },
+    callbackUrl?: string,
   ) {
     return this.sendCommand(
       productTenantId,
@@ -63,6 +66,7 @@ export class CitrineOsMessageApiService {
       'requeststoptransaction',
       stationIdentifiers,
       request,
+      callbackUrl,
     );
   }
 
@@ -70,8 +74,16 @@ export class CitrineOsMessageApiService {
     productTenantId: string,
     stationIdentifiers: string[],
     request: { type: 'Immediate' | 'OnIdle' | 'ImmediateAndResume' },
+    callbackUrl?: string,
   ) {
-    return this.sendCommand(productTenantId, 'configuration', 'reset', stationIdentifiers, request);
+    return this.sendCommand(
+      productTenantId,
+      'configuration',
+      'reset',
+      stationIdentifiers,
+      request,
+      callbackUrl,
+    );
   }
 
   triggerMessage(
@@ -85,6 +97,40 @@ export class CitrineOsMessageApiService {
       'triggermessage',
       stationIdentifiers,
       request,
+    );
+  }
+
+  getVariables(
+    productTenantId: string,
+    stationIdentifiers: string[],
+    request: {
+      getVariableData: { component: { name: string }; variable: { name: string } }[];
+    },
+    callbackUrl?: string,
+  ) {
+    return this.sendCommand(
+      productTenantId,
+      'monitoring',
+      'getvariables',
+      stationIdentifiers,
+      request,
+      callbackUrl,
+    );
+  }
+
+  dataTransfer(
+    productTenantId: string,
+    stationIdentifiers: string[],
+    request: { vendorId: string; messageId?: string; data?: unknown },
+    callbackUrl?: string,
+  ) {
+    return this.sendCommand(
+      productTenantId,
+      'configuration',
+      'datatransfer',
+      stationIdentifiers,
+      request,
+      callbackUrl,
     );
   }
 }
