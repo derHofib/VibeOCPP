@@ -24,5 +24,6 @@ git clone --depth 1 https://github.com/addyosmani/agent-skills.git /tmp/agent-sk
 rm -rf .claude/skills/*/ && cp -R /tmp/agent-skills/skills/. .claude/skills/
 ```
 
-The upstream repo also ships subagents (`agents/`), slash commands (`commands/`)
-and hooks (`hooks/`) that are not vendored here.
+The subagents, slash commands and hooks from the same upstream repo live in
+`.claude/agents/`, `.claude/commands/` and `.claude/hooks/` — see
+`.claude/README.md`.
