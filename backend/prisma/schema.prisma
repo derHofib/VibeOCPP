@@ -23,9 +23,10 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users     User[]
-  settings  Setting[]
-  auditLogs AuditLog[]
+  users             User[]
+  settings          Setting[]
+  auditLogs         AuditLog[]
+  citrineOsMessages CitrineOsMessageLog[]
 
   @@map("tenants")
 }
@@ -148,4 +149,44 @@ model AuditLog {
 
   @@index([tenantId, createdAt])
   @@map("audit_log")
+}
+
+// One row per event CitrineOS's Subscription webhook (or a command's
+// callbackUrl) pushes to us — see docs/architecture-proposal.md §8. This is
+// the raw feed the Live-Message-Monitor and the OCPP testsuite (both a
+// later increment) read from; it is populated starting now because
+// receiving the webhook is only useful once something durable stores it.
+enum CitrineOsMessageEvent {
+  connected
+  closed
+  message
+
+  @@map("citrineos_message_event")
+}
+
+enum CitrineOsMessageOrigin {
+  ChargingStation
+  ChargingStationManagementSystem
+
+  @@map("citrineos_message_origin")
+}
+
+model CitrineOsMessageLog {
+  id                 String                  @id @default(uuid())
+  tenantId           String
+  tenant             Tenant                  @relation(fields: [tenantId], references: [id])
+  ocppConnectionName String
+  event              CitrineOsMessageEvent
+  origin             CitrineOsMessageOrigin?
+  // Raw OCPP RPC frame as CitrineOS sent it (a JSON array, still encoded as
+  // a string) — kept verbatim rather than re-parsed, so the monitor can
+  // show exactly what was on the wire even if our own parsing has a bug.
+  rawMessage         String?
+  // CitrineOS's `info` map: correlationId, timestamp, protocol, action,
+  // type — whatever it included for this event.
+  info               Json?
+  receivedAt         DateTime                @default(now())
+
+  @@index([tenantId, ocppConnectionName, receivedAt])
+  @@map("citrineos_message_log")
 }

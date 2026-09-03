@@ -321,12 +321,21 @@ Alle übrigen Punkte oben sind die Arbeitsgrundlage für die Implementierung.
 
 ## 11. Umsetzungsplan (Inkremente)
 
-1. **Fundament** (dieses Inkrement): Monorepo-Grundgerüst, Produkt-DB-Schema, Settings-Layer
+1. **Fundament** ✅ erledigt: Monorepo-Grundgerüst, Produkt-DB-Schema, Settings-Layer
    mit Verschlüsselung, Auth/JWT, Rollen-Guards, Audit-Log — mit Tests. Docker-Compose für den
    eigenen Stack (Postgres + Backend), noch ohne Frontend/Payment/Hasura/Ops-Agent.
-2. CitrineOS-Integrationsschicht im BFF: typisierte Clients für Data/Message API,
-   Subscription-/Callback-Empfang, Fehlerbehandlung/Retry.
-3. Testsuite-Feature (Backend-Logik) + Live-Message-Monitor.
+2. **CitrineOS-Integrationsschicht** ✅ erledigt: typisierte Clients für Data-API
+   (`CitrineOsDataApiService`) und Message-API (`CitrineOsMessageApiService`, mit
+   RemoteStart/RemoteStop/Reset/TriggerMessage als erste konkrete Kommandos),
+   Settings-getriebene Verbindungskonfiguration (Kategorie `citrineos`, keine `.env`-Werte),
+   Subscription-Sync (idempotent, gegen Duplikate abgesichert), Webhook-Empfänger mit
+   Shared-Secret-Prüfung (CitrineOS signiert seine Callbacks nicht) und
+   `citrineos_message_log`-Tabelle als Grundlage für Live-Monitor/Testsuite. RBAC differenziert
+   zwischen unkritischen (RemoteStart/Stop: SuperAdmin/Admin/Mitarbeiter) und störenden Aktionen
+   (Reset/TriggerMessage: SuperAdmin/Admin). Getestet gegen einen echten HTTP-Server (Fake
+   CitrineOS in den E2E-Tests) — nicht gegen die echte CitrineOS-Instanz, da diese aus der
+   Sandbox nicht erreichbar ist; vor dem produktiven Einsatz gegen die reale Instanz verifizieren.
+3. Testsuite-Feature (Backend-Logik) + Live-Message-Monitor (baut auf `citrineos_message_log` auf).
 4. Payment-Integration (citrineos-payment-Client, `payment_*`-Schema-Zugriff, Directus-Setup).
 5. Eigene Hasura-Instanz + Metadata/Permissions passend zum Rollenmodell.
 6. Ops-Agent-Service.

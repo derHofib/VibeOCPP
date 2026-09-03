@@ -8,6 +8,7 @@ import { TenantsModule } from './tenants/tenants.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
 import { SettingsModule } from './settings/settings.module.js';
+import { CitrineOsModule } from './citrineos/citrineos.module.js';
 import { validateEnv } from './config/env.validation.js';
 
 @Module({
@@ -19,6 +20,7 @@ import { validateEnv } from './config/env.validation.js';
     AuthModule,
     UsersModule,
     SettingsModule,
+    CitrineOsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -13,7 +13,8 @@ layer, role model, and the incremental build plan).
 ## Layout
 
 ```
-backend/    NestJS BFF — auth, RBAC, encrypted settings store, audit log
+backend/    NestJS BFF — auth, RBAC, encrypted settings store, audit log,
+            CitrineOS Data/Message API clients + webhook receiver
             (this is the only implemented package so far)
 frontend/   React operator UI (not yet implemented)
 ops-agent/  Whitelisted container-ops microservice (not yet implemented)
@@ -43,6 +44,27 @@ cp .env.example .env   # point DATABASE_URL at a local Postgres
 pnpm db:migrate
 SEED_SUPERADMIN_PASSWORD='...' pnpm db:seed   # creates the first SuperAdmin login
 pnpm start:dev
+```
+
+Before any `/citrineos/*` endpoint works, configure the connection as SuperAdmin
+(there is no UI yet — use the settings API directly):
+
+```sh
+TOKEN=$(curl -s -X POST localhost:3000/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"...","password":"..."}' | jq -r .accessToken)
+
+for kv in dataApiUrl:string:http://localhost:8080 \
+          messageApiUrl:string:http://localhost:8080 \
+          citrineosTenantId:string:1 \
+          ocppVersion:string:2 \
+          webhookBaseUrl:string:https://your-public-url \
+          webhookSecret:secret:$(openssl rand -hex 24); do
+  key="${kv%%:*}"; rest="${kv#*:}"; type="${rest%%:*}"; value="${rest#*:}"
+  curl -s -X POST "localhost:3000/settings/citrineos/$key" \
+    -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+    -d "{\"type\":\"$type\",\"value\":\"$value\"}"
+done
 ```
 
 ## Testing
