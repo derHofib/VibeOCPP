@@ -94,6 +94,28 @@ describe('AuthService', () => {
     expect(storedHash).not.toBe(pair.refreshToken); // never store the raw token
   });
 
+  it('embeds Hasura JWT claims in the access token so it also authenticates GraphQL reads', async () => {
+    const { service } = await makeService(baseUser);
+    const pair = await service.issueTokenPair(baseUser);
+
+    const decoded = new JwtService().decode(pair.accessToken) as any;
+    expect(decoded['https://hasura.io/jwt/claims']).toEqual({
+      'x-hasura-allowed-roles': ['superadmin'],
+      'x-hasura-default-role': 'superadmin',
+      'x-hasura-user-id': baseUser.id,
+    });
+  });
+
+  it('maps the Admin role to "csms_admin", never bare "admin" — Hasura reserves that name', async () => {
+    const { service } = await makeService({ ...baseUser, role: 'Admin' });
+    const pair = await service.issueTokenPair({ ...baseUser, role: 'Admin' });
+
+    const decoded = new JwtService().decode(pair.accessToken) as any;
+    const claims = decoded['https://hasura.io/jwt/claims'];
+    expect(claims['x-hasura-default-role']).toBe('csms_admin');
+    expect(claims['x-hasura-allowed-roles']).toEqual(['csms_admin']);
+  });
+
   it('rotates the refresh token on use and rejects the old one on replay', async () => {
     const { service } = await makeService(baseUser);
     const first = await service.issueTokenPair(baseUser);

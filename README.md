@@ -20,7 +20,8 @@ backend/    NestJS BFF — auth, RBAC, encrypted settings store, audit log,
             (this is the only implemented package so far)
 frontend/   React operator UI (not yet implemented)
 ops-agent/  Whitelisted container-ops microservice (not yet implemented)
-hasura/     Metadata for our own read-only Hasura mirror (not yet implemented)
+hasura/     Metadata for our own read-only Hasura mirror of CitrineOS-core
+            data — see hasura/README.md
 docs/       Architecture proposal and other design docs
 ```
 
@@ -95,6 +96,15 @@ both — see the comments in docker-compose.yml):
 git clone https://github.com/citrineos/citrineos-payment ../citrineos-payment
 cp ../citrineos-payment/.env.example ../citrineos-payment/.env   # fill in real values
 docker compose --profile payment up --build
+```
+
+To run our own read-only Hasura mirror of CitrineOS-core's data (the
+frontend will read live/list data from this directly — see
+[hasura/README.md](hasura/README.md)):
+
+```sh
+docker compose --profile hasura up --build
+# console at http://localhost:8091, protected by HASURA_GRAPHQL_ADMIN_SECRET
 ```
 
 ## Testing

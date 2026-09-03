@@ -360,7 +360,18 @@ Alle übrigen Punkte oben sind die Arbeitsgrundlage für die Implementierung.
    Docker-Image gefunden, Build aus lokalem Checkout). Getestet gegen ein Postgres-Schema, das
    exakt citrineos-payments SQLAlchemy-Modelle nachbildet (kein Zugriff auf eine echte
    citrineos-payment-Instanz aus der Sandbox).
-5. Eigene Hasura-Instanz + Metadata/Permissions passend zum Rollenmodell.
+5. **Eigene Hasura-Instanz** ✅ erledigt: read-only Metadata (`hasura/metadata`) für 15
+   CitrineOS-Core-Tabellen, Namen/Relationen 1:1 aus CitrineOS' eigener Hasura-Metadata
+   übernommen, keine Insert/Update/Delete-Permissions irgendwo — jede Schreibaktion bleibt beim
+   BFF. Access-Token trägt jetzt zusätzlich den `https://hasura.io/jwt/claims`-Claim
+   (`AuthService.issueTokenPair`), sodass dasselbe Login-Token auch GraphQL-Reads
+   authentisiert — Entscheidung A aus Abschnitt 9. `citrineosTenantId`-Filter ist bewusst ein
+   Literal (Phase 1: ein CitrineOS-Tenant), keine Session-Variable. Tatsächlich gegen eine
+   echte `hasura/graphql-engine:v2.40.3.cli-migrations-v3`-Instanz getestet (nicht nur
+   YAML-validiert) — dabei zwei echte Bugs gefunden und behoben: `admin` ist ein von Hasura
+   reserviertes Rollenwort (→ `csms_admin`, `toHasuraRole()`-Mapping im Backend), und eine
+   `VariableAttributes`-Relation auf eine nicht exponierte `Components`-Tabelle wurde entfernt.
+   Details und Grenzen (kein Test gegen eine echte CitrineOS-DB) in `hasura/README.md`.
 6. Ops-Agent-Service.
 7. Frontend (React/Vite), beginnend mit Auth + Grundgerüst, dann Domänenansichten.
 

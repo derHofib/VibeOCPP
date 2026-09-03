@@ -1,0 +1,49 @@
+# Read-only mirror of the corresponding table in CitrineOS-core's own
+# database. Table/column/relationship names are transcribed from CitrineOS
+# core's own Hasura metadata (apps/ocpp-server/hasura-metadata in
+# citrineos-core) — not reinvented. No insert/update/delete permissions are
+# defined anywhere in this directory: every write to CitrineOS-owned data
+# goes through the BFF's REST calls to the Data/Message API, never through
+# Hasura directly — see docs/architecture-proposal.md §9.
+#
+# The tenantId filter below is a literal (not a session variable) because
+# Phase 1 assumes a single CitrineOS tenant, matching the tenantId
+# configured at settings/citrineos/citrineosTenantId (default 1). If that
+# setting is ever changed, update the filter here to match, and revisit
+# this when multi-tenancy actually ships (docs/architecture-proposal.md §3).
+
+table:
+  name: LatestStatusNotifications
+  schema: public
+object_relationships:
+  - name: ChargingStation
+    using:
+      foreign_key_constraint_on: stationId
+  - name: StatusNotification
+    using:
+      foreign_key_constraint_on: statusNotificationId
+select_permissions:
+  - role: superadmin
+    permission:
+      columns: '*'
+      filter:
+        tenantId:
+          _eq: 1
+      allow_aggregations: true
+    comment: ''
+  - role: csms_admin
+    permission:
+      columns: '*'
+      filter:
+        tenantId:
+          _eq: 1
+      allow_aggregations: true
+    comment: ''
+  - role: mitarbeiter
+    permission:
+      columns: '*'
+      filter:
+        tenantId:
+          _eq: 1
+      allow_aggregations: true
+    comment: ''

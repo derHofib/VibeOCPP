@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { createHash, randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PasswordService } from './password.service.js';
+import { toHasuraRole } from './auth.types.js';
 import type { AuthenticatedUser, JwtAccessPayload, TokenPair } from './auth.types.js';
 
 const ACCESS_TOKEN_TTL = '15m';
@@ -46,11 +47,17 @@ export class AuthService {
   }
 
   async issueTokenPair(user: AuthenticatedUser): Promise<TokenPair> {
+    const hasuraRole = toHasuraRole(user.role);
     const payload: JwtAccessPayload = {
       sub: user.id,
       tenantId: user.tenantId,
       email: user.email,
       role: user.role,
+      'https://hasura.io/jwt/claims': {
+        'x-hasura-allowed-roles': [hasuraRole],
+        'x-hasura-default-role': hasuraRole,
+        'x-hasura-user-id': user.id,
+      },
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {

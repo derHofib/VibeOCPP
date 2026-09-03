@@ -4,11 +4,10 @@
 # file: it keeps running unmodified from its own repo/compose, and this
 # stack reaches it only over the network (Data/Message API, Subscriptions).
 #
-# Increments 1-4 (so far): product database + BFF backend, plus the
-# optional citrineos-payment/Directus services below (behind the "payment"
-# profile — see docs/architecture-proposal.md §4 for why they're needed at
-# all). Still to come: frontend, own Hasura instance (read-only mirror of
-# the CitrineOS database), ops-agent — see docs/architecture-proposal.md §11.
+# Increments 1-5 (so far): product database + BFF backend, plus the
+# optional citrineos-payment/Directus and own-Hasura-instance services below
+# (behind Compose profiles — see docs/architecture-proposal.md §4/§9/§11 for
+# why they're needed at all). Still to come: frontend, ops-agent.
 
 services:
   product-db:
@@ -109,6 +108,43 @@ services:
       - directus-data:/directus/database
     ports:
       - "${DIRECTUS_PORT:-8055}:8055"
+
+  # ---- Optional: our own read-only Hasura instance (`docker compose --profile hasura up`) ----
+  #
+  # A SEPARATE Hasura instance from CitrineOS's own (the one its
+  # apps/operator-ui uses) — same underlying CitrineOS-core database, our
+  # own metadata (./hasura/metadata), never touching citrineos-core's repo
+  # or compose file. Per docs/architecture-proposal.md §9: the frontend
+  # reads live/list CitrineOS data straight from this instance over
+  # GraphQL (subscriptions included) using the same JWT the backend issues
+  # — see the "https://hasura.io/jwt/claims" claim AuthService embeds — but
+  # every write still goes through the BFF's REST endpoints. This instance
+  # has no insert/update/delete permissions configured anywhere in
+  # ./hasura/metadata, on purpose.
+  #
+  # Uses the same graphql-engine version CitrineOS-core itself pins, for
+  # compatibility with the schema it's reading. The `.cli-migrations-v3`
+  # image tag is what makes the ./hasura/metadata mount below auto-apply on
+  # startup — a plain `hasura/graphql-engine` image does not do this.
+  #
+  # HASURA_GRAPHQL_DATABASE_URL points at CitrineOS-core's own Postgres —
+  # NOT product-db above, and NOT something we can put in our own settings
+  # table (Hasura is a separate container we don't control at runtime).
+  # `:-` defaults, not `:?`, for the same reason as the payment services.
+  hasura:
+    profiles: ["hasura"]
+    image: hasura/graphql-engine:v2.40.3.cli-migrations-v3
+    restart: unless-stopped
+    volumes:
+      - ./hasura/metadata:/hasura-metadata
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: ${CITRINEOS_DATABASE_URL:-postgres://change-me/change-me}
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET:-change-me}
+      HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256","key":"${JWT_ACCESS_SECRET:-change-me}"}'
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"
+    ports:
+      - "${HASURA_PORT:-8091}:8080"
 
 volumes:
   product-db-data:
