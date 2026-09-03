@@ -1,0 +1,54 @@
+# Own, self-contained stack for the CSMS backend/frontend product — entirely
+# separate from the existing CitrineOS Docker Compose setup, per
+# docs/architecture-proposal.md §2. CitrineOS itself is never part of this
+# file: it keeps running unmodified from its own repo/compose, and this
+# stack reaches it only over the network (Data/Message API, Subscriptions).
+#
+# Increment 1 (this file, for now): product database + BFF backend only.
+# Later increments add: frontend, own Hasura instance (read-only mirror of
+# the CitrineOS database), ops-agent, and the citrineos-payment/Directus
+# containers — see docs/architecture-proposal.md §11.
+
+services:
+  product-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PRODUCT_DB_USER:-csms}
+      POSTGRES_PASSWORD: ${PRODUCT_DB_PASSWORD:?set PRODUCT_DB_PASSWORD in .env}
+      POSTGRES_DB: ${PRODUCT_DB_NAME:-csms_product}
+    volumes:
+      - product-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PRODUCT_DB_USER:-csms} -d ${PRODUCT_DB_NAME:-csms_product}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "${PRODUCT_DB_PORT:-55432}:5432"
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      # network/args below only matter when building behind the sandbox's
+      # TLS-intercepting dev proxy (see /root/.ccr/README.md); harmless and
+      # unused in a normal environment where these variables are unset.
+      network: ${DOCKER_BUILD_NETWORK:-default}
+      args:
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+    restart: unless-stopped
+    depends_on:
+      product-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${PRODUCT_DB_USER:-csms}:${PRODUCT_DB_PASSWORD}@product-db:5432/${PRODUCT_DB_NAME:-csms_product}?schema=public
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET in .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in .env}
+      SETTINGS_MASTER_KEY: ${SETTINGS_MASTER_KEY:?set SETTINGS_MASTER_KEY in .env}
+      PORT: "3000"
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+
+volumes:
+  product-db-data:

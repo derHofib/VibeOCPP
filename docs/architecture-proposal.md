@@ -1,6 +1,6 @@
 # Architekturvorschlag: CSMS-Backend + Operator-Frontend auf CitrineOS
 
-Status: **Entwurf zur Rückmeldung — noch keine Implementierung.**
+Status: **Entscheidungen getroffen (siehe Abschnitt 10), Implementierung läuft.**
 
 Grundlage: Quellcode-Analyse von `citrineos/citrineos-core` (Commit `main`, Fastify/TS-Monorepo)
 und `citrineos/citrineos-payment` (Python/FastAPI). Keine Live-Introspektion einer laufenden
@@ -301,9 +301,35 @@ stillschweigend treffen möchte.
 
 ---
 
-## 10. Offene Rückfragen
+## 10. Entscheidungen
 
-Drei Entscheidungen wirken sich spürbar auf Aufwand/Sicherheitsmodell aus — dazu bitte ich um
-Rückmeldung, bevor ich zu implementieren anfange (die restlichen Punkte oben sind Vorschläge,
-aber keine harten Weichenstellungen — dort baue ich mit den genannten Annahmen, wenn kein
-Widerspruch kommt).
+1. **Live-Read-Pfad: A — direkt gegen eigene Hasura-Instanz.** Frontend liest Live-/Listendaten
+   per JWT direkt aus unserer eigenen, read-only Hasura-Instanz (Subscriptions). Alle
+   Schreibaktionen weiterhin ausschließlich über das BFF. Hasura-Rollen/Permissions und
+   BFF-Guards müssen bei jeder Rollenänderung konsistent gehalten werden — das dokumentieren
+   wir an einer Stelle (`hasura/metadata`), nicht redundant gepflegt.
+2. **Payment-Scope: voller Scan&Charge inkl. Display-QR-Code.** Phase 1 bildet den kompletten
+   Flow ab (`SetDisplayMessage`-Integration, QR-Code am Ladepunkt-Display). Directus wird als
+   Container mitgeführt (Bootstrap-Admin via Env, kein Nutzerzugriff). Entsprechend mehr
+   Testaufwand gegen reale Displays/Stationen — wird im Betreiber-Dashboard als eigener
+   Monitoring-Bereich sichtbar.
+3. **Infrastruktur-Tab: dedizierter Ops-Agent mit Whitelist.** Eigener Service mit
+   Docker-Socket-Zugriff, exponiert ausschließlich eine feste Aktionsliste. Das BFF bekommt
+   selbst keinen Docker-Zugriff.
+
+Alle übrigen Punkte oben sind die Arbeitsgrundlage für die Implementierung.
+
+## 11. Umsetzungsplan (Inkremente)
+
+1. **Fundament** (dieses Inkrement): Monorepo-Grundgerüst, Produkt-DB-Schema, Settings-Layer
+   mit Verschlüsselung, Auth/JWT, Rollen-Guards, Audit-Log — mit Tests. Docker-Compose für den
+   eigenen Stack (Postgres + Backend), noch ohne Frontend/Payment/Hasura/Ops-Agent.
+2. CitrineOS-Integrationsschicht im BFF: typisierte Clients für Data/Message API,
+   Subscription-/Callback-Empfang, Fehlerbehandlung/Retry.
+3. Testsuite-Feature (Backend-Logik) + Live-Message-Monitor.
+4. Payment-Integration (citrineos-payment-Client, `payment_*`-Schema-Zugriff, Directus-Setup).
+5. Eigene Hasura-Instanz + Metadata/Permissions passend zum Rollenmodell.
+6. Ops-Agent-Service.
+7. Frontend (React/Vite), beginnend mit Auth + Grundgerüst, dann Domänenansichten.
+
+Jedes Inkrement wird einzeln committet und ist für sich lauffähig/testbar.

@@ -1,0 +1,20 @@
+{
+  "name": "vibeocpp",
+  "private": true,
+  "description": "CSMS backend and operator frontend built on top of CitrineOS.",
+  "engines": {
+    "node": ">=22"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "argon2",
+      "esbuild",
+      "msgpackr-extract",
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "workerd"
+    ]
+  },
+  "packageManager": "pnpm@10.33.0"
+}

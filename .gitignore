@@ -1,3 +1,9 @@
 # Local hook caches (see .claude/hooks/SDD-CACHE.md, SIMPLIFY-IGNORE.md)
 .claude/sdd-cache/
 .claude/.simplify-ignore-cache/
+
+node_modules/
+dist/
+.env
+backend/ca-bundle.crt
+backend/ca-bundle.crt

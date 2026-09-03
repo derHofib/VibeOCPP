@@ -1,0 +1,151 @@
+// Product database schema for the CSMS BFF. CitrineOS domain data (stations,
+// transactions, meter values) is NOT modeled here — it stays in CitrineOS's
+// own database and is reached only through its REST APIs / our read-only
+// Hasura mirror. This schema holds only product-owned data.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Multi-tenancy is prepared but not shipped: exactly one row exists in
+// Phase 1, and every tenant-scoped table below carries tenantId from day
+// one so a later rollout needs no schema migration, only new tenant rows
+// and removing the single-tenant assumption in application code.
+model Tenant {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  settings  Setting[]
+  auditLogs AuditLog[]
+
+  @@map("tenants")
+}
+
+// Driver is modeled but intentionally unused in Phase 1: no auth flow, no
+// endpoints, no UI issue it. It exists so a future driver portal needs no
+// role migration, only new code paths gated on it.
+enum Role {
+  SuperAdmin
+  Admin
+  Mitarbeiter
+  Driver
+
+  @@map("role")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  email        String
+  passwordHash String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+
+  @@unique([tenantId, email])
+  @@map("users")
+}
+
+// Refresh tokens are stored hashed and rotated on use (single-use), so a
+// stolen token file/log entry cannot be replayed even if the DB leaks.
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("refresh_tokens")
+}
+
+enum SettingType {
+  string
+  number
+  boolean
+  json
+  secret
+
+  @@map("setting_type")
+}
+
+// The versioned settings store described in the architecture proposal:
+// non-secret values are readable as-is, secret values are stored encrypted
+// (see SettingsService) and only ever returned masked over the API.
+model Setting {
+  id        String      @id @default(uuid())
+  tenantId  String
+  tenant    Tenant      @relation(fields: [tenantId], references: [id])
+  category  String
+  key       String
+  type      SettingType
+  value     String? // plaintext JSON-encoded value; null when encrypted
+  encryptedValue Bytes? // AES-256-GCM ciphertext; null when not a secret
+  encryptionIv   Bytes? // null when not a secret
+  encryptionTag  Bytes? // null when not a secret
+  version   Int         @default(1)
+  updatedBy String?
+  updatedAt DateTime    @updatedAt
+  createdAt DateTime    @default(now())
+
+  history SettingHistory[]
+
+  @@unique([tenantId, category, key])
+  @@map("settings")
+}
+
+// One row per change, so any setting can be rolled back to a prior version
+// from the SuperAdmin UI, per the architecture proposal's audit/rollback
+// requirement.
+model SettingHistory {
+  id             String      @id @default(uuid())
+  settingId      String
+  setting        Setting     @relation(fields: [settingId], references: [id], onDelete: Cascade)
+  version        Int
+  type           SettingType
+  value          String?
+  encryptedValue Bytes?
+  encryptionIv   Bytes?
+  encryptionTag  Bytes?
+  changedBy      String?
+  changedAt      DateTime    @default(now())
+
+  @@map("settings_history")
+}
+
+// Every privileged action (settings changes, user management, remote OCPP
+// commands, firmware/certificate operations, backup/restore) is recorded
+// here by the audit interceptor: who, when, what, old/new value.
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  targetType String?
+  targetId   String?
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@map("audit_log")
+}
