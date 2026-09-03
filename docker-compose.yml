@@ -4,10 +4,11 @@
 # file: it keeps running unmodified from its own repo/compose, and this
 # stack reaches it only over the network (Data/Message API, Subscriptions).
 #
-# Increment 1 (this file, for now): product database + BFF backend only.
-# Later increments add: frontend, own Hasura instance (read-only mirror of
-# the CitrineOS database), ops-agent, and the citrineos-payment/Directus
-# containers — see docs/architecture-proposal.md §11.
+# Increments 1-4 (so far): product database + BFF backend, plus the
+# optional citrineos-payment/Directus services below (behind the "payment"
+# profile — see docs/architecture-proposal.md §4 for why they're needed at
+# all). Still to come: frontend, own Hasura instance (read-only mirror of
+# the CitrineOS database), ops-agent — see docs/architecture-proposal.md §11.
 
 services:
   product-db:
@@ -50,5 +51,65 @@ services:
     ports:
       - "${BACKEND_PORT:-3000}:3000"
 
+  # ---- Optional: citrineos-payment + Directus (`docker compose --profile payment up`) ----
+  #
+  # citrineos-payment is CitrineOS's own Stripe/Scan&Charge module — we run
+  # it unmodified, the same principle as CitrineOS-core itself. It has no
+  # admin API for Operators/Locations/Evses/Connectors/Tariffs (see
+  # docs/architecture-proposal.md §4), which is what backend/src/payment/
+  # talks to directly instead: both this container and our backend write
+  # into the SAME `citrine_payment.databaseUrl` database — the one CitrineOS
+  # core itself uses, not our own product-db above.
+  #
+  # There is no published Docker image for citrineos-payment as of this
+  # writing, so this builds from a local clone — point CITRINEOS_PAYMENT_PATH
+  # in .env at one:
+  #   git clone https://github.com/citrineos/citrineos-payment ../citrineos-payment
+  # citrineos-payment's own Dockerfile refuses to build without a `.env`
+  # file inside that clone — copy its `.env.example` to `.env` and fill in
+  # real values there (Stripe keys, CITRINEOS_DATA_API_URL/MESSAGE_API_URL
+  # pointed at your CitrineOS deployment, MESSAGE_BROKER_* pointed at its
+  # RabbitMQ, DB_HOST/DB_DATABASE pointed at its Postgres) before building.
+  #
+  # The `:-` defaults below (rather than `:?`) are deliberate: Compose
+  # interpolates every service's variables during `docker compose config`
+  # even for services outside the active profile, so a required (`:?`)
+  # variable here would break the base `docker compose up` for everyone who
+  # hasn't set up payment yet. Leaving these unset just fails the build with
+  # a clear "path not found" once you actually run `--profile payment up`.
+  citrineos-payment:
+    profiles: ["payment"]
+    build:
+      context: ${CITRINEOS_PAYMENT_PATH:-./citrineos-payment}
+    restart: unless-stopped
+    env_file:
+      - ${CITRINEOS_PAYMENT_PATH:-./citrineos-payment}/.env
+    ports:
+      - "${CITRINEOS_PAYMENT_PORT:-9010}:9010"
+
+  # File store for the Scan&Charge QR code image — citrineos-payment's
+  # DirectusIntegration is a hard dependency at container start regardless
+  # of the CITRINEOS_SCAN_AND_CHARGE flag (a startup bug in that container,
+  # not something we can configure around without patching it). Bootstraps
+  # its own admin account from the env vars below; nothing else uses it.
+  # Same `:-` reasoning as above — set real values in .env before running
+  # `--profile payment up`.
+  directus:
+    profiles: ["payment"]
+    image: directus/directus:11
+    restart: unless-stopped
+    environment:
+      KEY: ${DIRECTUS_KEY:-change-me-openssl-rand-hex-32}
+      SECRET: ${DIRECTUS_SECRET:-change-me-openssl-rand-hex-32}
+      ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD:-change-me}
+      DB_CLIENT: sqlite3
+      DB_FILENAME: /directus/database/data.db
+    volumes:
+      - directus-data:/directus/database
+    ports:
+      - "${DIRECTUS_PORT:-8055}:8055"
+
 volumes:
   product-db-data:
+  directus-data:

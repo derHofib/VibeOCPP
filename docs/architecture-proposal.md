@@ -348,7 +348,18 @@ Alle übrigen Punkte oben sind die Arbeitsgrundlage für die Implementierung.
    Filtern (Station/Aktion/Richtung/Zeitraum) und CSV-Export, aufbauend auf
    `citrineos_message_log` aus Inkrement 2. Getestet inkl. eines echten Laufs gegen einen
    simulierten CitrineOS-HTTP-Server (Trigger-, Command- und Skip-Ergebnisse alle verifiziert).
-4. Payment-Integration (citrineos-payment-Client, `payment_*`-Schema-Zugriff, Directus-Setup).
+4. **Payment-Integration** ✅ erledigt: direkter SQL-Zugriff (kein Prisma — fremdes, nicht von
+   uns migriertes Schema) auf citrineos-payments eigene `payment_*`-Tabellen für
+   Operators/Locations/Evses/Connectors/Tariffs (dort existiert keine Admin-API, siehe §4 oben),
+   read-only für Checkouts. Verbindung settings-gesteuert (`payment.databaseUrl`, verschlüsselt),
+   Tabellenpräfix konfigurierbar (Default `payment_`, wie citrineos-payments eigenes
+   `DB_TABLE_PREFIX`). Spaltennamen/Typen 1:1 aus `db/init_db.py` übernommen (Integer-PKs, keine
+   UUIDs — anders als der Rest unseres Schemas). RBAC: Admin+SuperAdmin (Rollentabelle: „Admin
+   verwaltet Standorte, Stationen, Tarife"), Mitarbeiter kein Zugriff. `docker-compose.yml` bindet
+   citrineos-payment + Directus optional über ein `payment`-Profil ein (kein offizielles
+   Docker-Image gefunden, Build aus lokalem Checkout). Getestet gegen ein Postgres-Schema, das
+   exakt citrineos-payments SQLAlchemy-Modelle nachbildet (kein Zugriff auf eine echte
+   citrineos-payment-Instanz aus der Sandbox).
 5. Eigene Hasura-Instanz + Metadata/Permissions passend zum Rollenmodell.
 6. Ops-Agent-Service.
 7. Frontend (React/Vite), beginnend mit Auth + Grundgerüst, dann Domänenansichten.

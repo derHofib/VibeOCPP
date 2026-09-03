@@ -15,7 +15,8 @@ layer, role model, and the incremental build plan).
 ```
 backend/    NestJS BFF — auth, RBAC, encrypted settings store, audit log,
             CitrineOS Data/Message API clients + webhook receiver,
-            OCPP testsuite + Live-Message-Monitor
+            OCPP testsuite + Live-Message-Monitor, payment/tariff
+            master-data management against citrineos-payment's own DB
             (this is the only implemented package so far)
 frontend/   React operator UI (not yet implemented)
 ops-agent/  Whitelisted container-ops microservice (not yet implemented)
@@ -75,6 +76,25 @@ curl -s -X POST localhost:3000/testsuite/runs \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"ocppConnectionName":"<station id>","ocppVersion":"2","manufacturer":"Bender","model":"CC612"}'
 # poll GET /testsuite/runs/<id> for live step results
+```
+
+Similarly, before any `/payment/*` endpoint works, point it at the
+Postgres database your citrineos-payment container uses (not this
+project's own product-db — see docs/architecture-proposal.md §4):
+
+```sh
+curl -s -X POST localhost:3000/settings/payment/databaseUrl \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"type":"secret","value":"postgresql://user:pass@host:5432/citrine"}'
+```
+
+To also run citrineos-payment + Directus themselves (Scan&Charge needs
+both — see the comments in docker-compose.yml):
+
+```sh
+git clone https://github.com/citrineos/citrineos-payment ../citrineos-payment
+cp ../citrineos-payment/.env.example ../citrineos-payment/.env   # fill in real values
+docker compose --profile payment up --build
 ```
 
 ## Testing
