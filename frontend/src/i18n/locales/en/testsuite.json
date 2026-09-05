@@ -1,0 +1,26 @@
+{
+  "title": "Testsuite",
+  "lede": "A fixed set of checks run against a connected station — raw payloads and plain-text errors per step.",
+  "start": {
+    "title": "Start a new run",
+    "station": "Station identifier (OCPP)",
+    "ocppVersion": "OCPP version",
+    "manufacturer": "Manufacturer",
+    "model": "Model",
+    "firmwareVersion": "Firmware version",
+    "submit": "Start run",
+    "submitting": "Starting…"
+  },
+  "table": { "station": "Station", "started": "Started", "status": "Status", "steps": "Steps" },
+  "status": { "running": "Running", "completed": "Completed", "aborted": "Aborted" },
+  "stepStatus": {
+    "pending": "Pending",
+    "running": "Running",
+    "pass": "Pass",
+    "fail": "Fail",
+    "timeout": "Timeout",
+    "skipped": "Skipped"
+  },
+  "detail": { "back": "Back to list", "noError": "—", "rawRequest": "Request", "rawResponse": "Response" },
+  "empty": "No test run started yet."
+}

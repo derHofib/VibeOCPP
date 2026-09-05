@@ -1,0 +1,26 @@
+{
+  "title": "Users",
+  "table": {
+    "email": "Email",
+    "role": "Role",
+    "status": "Status",
+    "createdAt": "Created",
+    "actions": "Actions"
+  },
+  "status": { "active": "Active", "inactive": "Inactive" },
+  "actions": { "deactivate": "Deactivate", "activate": "Activate", "newUser": "New user" },
+  "form": {
+    "title": "Create a new user",
+    "email": "Email address",
+    "password": "Initial password",
+    "passwordHint": "At least 12 characters.",
+    "role": "Role",
+    "submit": "Create",
+    "submitting": "Creating…"
+  },
+  "errors": {
+    "conflict": "A user with this email already exists.",
+    "generic": "Action failed. Please try again."
+  },
+  "empty": "No users yet."
+}

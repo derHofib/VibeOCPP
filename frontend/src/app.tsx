@@ -5,6 +5,11 @@ import { ProtectedRoute } from './components/auth/protected-route.js';
 import { LoginPage } from './pages/login-page.js';
 import { DashboardPage } from './pages/dashboard-page.js';
 import { PlaceholderPage } from './pages/placeholder-page.js';
+import { UsersPage } from './pages/users-page.js';
+import { SettingsPage } from './pages/settings-page.js';
+import { OpsPage } from './pages/ops-page.js';
+import { TestSuitePage } from './pages/testsuite-page.js';
+import { MonitorPage } from './pages/monitor-page.js';
 
 export function App() {
   const { t } = useTranslation('common');
@@ -20,6 +25,11 @@ export function App() {
               <AppShell>
                 <Routes>
                   <Route path="/" element={<DashboardPage />} />
+                  {/* Stations/Transactions read live CitrineOS data via our
+                      read-only Hasura mirror (docs/architecture-proposal.md
+                      §9/§11 decision A) — that GraphQL wiring isn't built
+                      yet, so these stay placeholders rather than shipping
+                      queries nobody has been able to run against real data. */}
                   <Route
                     path="/stations"
                     element={<PlaceholderPage title={t('nav.stations')} description={t('nav.stations')} />}
@@ -28,19 +38,13 @@ export function App() {
                     path="/transactions"
                     element={<PlaceholderPage title={t('nav.transactions')} description={t('nav.transactions')} />}
                   />
-                  <Route
-                    path="/testsuite"
-                    element={<PlaceholderPage title={t('nav.testsuite')} description={t('nav.testsuite')} />}
-                  />
-                  <Route
-                    path="/monitor"
-                    element={<PlaceholderPage title={t('nav.monitor')} description={t('nav.monitor')} />}
-                  />
+                  <Route path="/testsuite" element={<TestSuitePage />} />
+                  <Route path="/monitor" element={<MonitorPage />} />
                   <Route
                     path="/users"
                     element={
                       <ProtectedRoute requiredRole="Admin">
-                        <PlaceholderPage title={t('nav.users')} description={t('nav.users')} />
+                        <UsersPage />
                       </ProtectedRoute>
                     }
                   />
@@ -48,7 +52,7 @@ export function App() {
                     path="/settings"
                     element={
                       <ProtectedRoute requiredRole="SuperAdmin">
-                        <PlaceholderPage title={t('nav.settings')} description={t('nav.settings')} />
+                        <SettingsPage />
                       </ProtectedRoute>
                     }
                   />
@@ -56,7 +60,7 @@ export function App() {
                     path="/ops"
                     element={
                       <ProtectedRoute requiredRole="SuperAdmin">
-                        <PlaceholderPage title={t('nav.ops')} description={t('nav.ops')} />
+                        <OpsPage />
                       </ProtectedRoute>
                     }
                   />

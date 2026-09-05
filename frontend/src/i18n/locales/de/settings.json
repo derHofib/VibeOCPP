@@ -1,0 +1,19 @@
+{
+  "title": "Einstellungen",
+  "lede": "Konfiguration liegt versioniert in der Datenbank, nicht in der .env — jede Änderung wird auditiert.",
+  "noCategories": "Noch keine Konfiguration hinterlegt.",
+  "table": { "key": "Schlüssel", "type": "Typ", "value": "Wert", "version": "Version", "updatedAt": "Zuletzt geändert", "actions": "Aktionen" },
+  "secretMasked": "Verschlüsselt hinterlegt — Wert wird nie im Klartext angezeigt.",
+  "edit": "Bearbeiten",
+  "add": {
+    "title": "Neuen Schlüssel hinzufügen",
+    "category": "Bereich",
+    "key": "Schlüssel",
+    "type": "Typ",
+    "value": "Wert",
+    "submit": "Speichern",
+    "submitting": "Wird gespeichert…"
+  },
+  "types": { "string": "Text", "number": "Zahl", "boolean": "Ja/Nein", "json": "JSON", "secret": "Geheimnis" },
+  "errors": { "generic": "Speichern fehlgeschlagen." }
+}

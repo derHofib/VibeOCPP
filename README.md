@@ -18,8 +18,10 @@ backend/    NestJS BFF — auth, RBAC, encrypted settings store, audit log,
             OCPP testsuite + Live-Message-Monitor, payment/tariff
             master-data management against citrineos-payment's own DB
 frontend/   React operator UI — auth, RBAC-gated routing/nav, i18n
-            (DE/EN), dark mode, own design tokens — see
-            frontend/README.md. Domain views are still placeholders.
+            (DE/EN), dark mode, own design tokens, and working views for
+            Users/Settings/Testsuite/Live-Monitor/Infrastructure — see
+            frontend/README.md. Stations/Transactions still need the
+            Hasura live-read path and remain placeholders.
 ops-agent/  Whitelisted container-ops microservice — status/logs/restart for
             a fixed set of known services, nothing else — see
             ops-agent/README.md

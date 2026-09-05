@@ -1,0 +1,19 @@
+{
+  "title": "Settings",
+  "lede": "Configuration lives versioned in the database, not in .env — every change is audited.",
+  "noCategories": "No configuration set yet.",
+  "table": { "key": "Key", "type": "Type", "value": "Value", "version": "Version", "updatedAt": "Last changed", "actions": "Actions" },
+  "secretMasked": "Stored encrypted — the value is never shown in plain text.",
+  "edit": "Edit",
+  "add": {
+    "title": "Add a new key",
+    "category": "Category",
+    "key": "Key",
+    "type": "Type",
+    "value": "Value",
+    "submit": "Save",
+    "submitting": "Saving…"
+  },
+  "types": { "string": "Text", "number": "Number", "boolean": "Yes/No", "json": "JSON", "secret": "Secret" },
+  "errors": { "generic": "Saving failed." }
+}

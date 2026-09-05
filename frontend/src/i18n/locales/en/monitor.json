@@ -1,0 +1,8 @@
+{
+  "title": "Live Monitor",
+  "lede": "Filter OCPP traffic by station, action, direction, and time range.",
+  "filters": { "station": "Station", "action": "Action", "origin": "Direction", "apply": "Filter", "export": "Export as CSV" },
+  "origin": { "all": "All", "ChargingStation": "From the station", "ChargingStationManagementSystem": "From the CSMS" },
+  "table": { "receivedAt": "Received", "station": "Station", "event": "Event", "origin": "Direction", "action": "Action" },
+  "empty": "No messages in the selected range."
+}

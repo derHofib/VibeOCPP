@@ -1,0 +1,8 @@
+{
+  "title": "Live-Monitor",
+  "lede": "OCPP-Nachrichten nach Station, Aktion, Richtung und Zeitraum filterbar.",
+  "filters": { "station": "Station", "action": "Aktion", "origin": "Richtung", "apply": "Filtern", "export": "Als CSV exportieren" },
+  "origin": { "all": "Alle", "ChargingStation": "Von der Station", "ChargingStationManagementSystem": "Vom CSMS" },
+  "table": { "receivedAt": "Empfangen", "station": "Station", "event": "Ereignis", "origin": "Richtung", "action": "Aktion" },
+  "empty": "Keine Nachrichten im gewählten Zeitraum."
+}

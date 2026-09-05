@@ -1,0 +1,26 @@
+{
+  "title": "Testsuite",
+  "lede": "Fester Prüfschritt-Katalog gegen eine verbundene Station — mit Rohdaten und Klartext-Fehlern je Schritt.",
+  "start": {
+    "title": "Neuen Lauf starten",
+    "station": "Stations-Kennung (OCPP)",
+    "ocppVersion": "OCPP-Version",
+    "manufacturer": "Hersteller",
+    "model": "Modell",
+    "firmwareVersion": "Firmware-Version",
+    "submit": "Lauf starten",
+    "submitting": "Wird gestartet…"
+  },
+  "table": { "station": "Station", "started": "Gestartet", "status": "Status", "steps": "Schritte" },
+  "status": { "running": "Läuft", "completed": "Abgeschlossen", "aborted": "Abgebrochen" },
+  "stepStatus": {
+    "pending": "Ausstehend",
+    "running": "Läuft",
+    "pass": "Bestanden",
+    "fail": "Fehlgeschlagen",
+    "timeout": "Zeitüberschreitung",
+    "skipped": "Übersprungen"
+  },
+  "detail": { "back": "Zurück zur Liste", "noError": "—", "rawRequest": "Anfrage", "rawResponse": "Antwort" },
+  "empty": "Noch kein Testlauf gestartet."
+}

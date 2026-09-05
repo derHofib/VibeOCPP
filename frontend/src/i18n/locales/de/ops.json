@@ -1,0 +1,7 @@
+{
+  "title": "Infrastruktur",
+  "lede": "Status, Logs und Neustart für eine feste Liste bekannter Dienste — kein beliebiger Shell-Zugriff.",
+  "state": { "running": "Läuft", "notFound": "Nicht erreichbar" },
+  "actions": { "restart": "Neu starten", "restarting": "Wird neu gestartet…", "viewLogs": "Logs anzeigen", "hideLogs": "Logs ausblenden" },
+  "logsEmpty": "Keine Logs verfügbar."
+}

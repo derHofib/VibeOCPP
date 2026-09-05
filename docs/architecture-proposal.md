@@ -393,7 +393,7 @@ Alle übrigen Punkte oben sind die Arbeitsgrundlage für die Implementierung.
    Docker-Daemon bzw. die tatsächliche `docker-compose.yml`-Verkabelung (Labels, Netzwerk,
    Read-only-Socket-Mount) — vor Produktivbetrieb mit einem echten `docker compose up` prüfen.
    Details in `ops-agent/README.md`.
-7. **Frontend (React/Vite) — Grundgerüst** ✅ erledigt, Domänenansichten folgen: Vite + TS +
+7a. **Frontend (React/Vite) — Grundgerüst** ✅ erledigt: Vite + TS +
    Tailwind v4 mit eigenem Design-Token-Set (`frontend/src/styles/tokens.css` — bewusst nicht die
    Standard-shadcn-Optik), eigene UI-Primitiven (Button/Input/Card/StatusBadge, CVA-basiert wie
    shadcn generiert, aber selbst geschrieben). `AuthProvider` implementiert den vollen
@@ -403,15 +403,51 @@ Alle übrigen Punkte oben sind die Arbeitsgrundlage für die Implementierung.
    spiegelt `backend/src/common/roles.enum.ts`) blendet Nav-Punkte aus und leitet bei
    unzureichender Rolle um — reine UI-Bequemlichkeit, jede privilegierte Aktion bleibt
    serverseitig durch die BFF-Guards abgesichert. react-i18next mit DE/EN (Browser-Erkennung,
-   persistiert), Dark Mode über `data-theme`-Attribut mit System-Fallback. Domänenansichten
-   (Stationen, Transaktionen, Testsuite, Live-Monitor, Einstellungen, Benutzer, Infrastruktur)
-   sind vorerst `PlaceholderPage`-Stubs — Routing/Guards/Nav sind aber vollständig verdrahtet.
-   Getestet: 24 Unit-Tests (Vitest + Testing Library, u. a. der komplette Auth-Flow gegen
-   gemocktes `fetch`, RBAC-Redirects, Theme-Persistenz), `pnpm build`/`pnpm lint` grün. Zusätzlich
-   end-to-end in einem echten Chromium (Playwright) gegen einen echten laufenden Backend- +
-   Postgres-Prozess verifiziert: Login als SuperAdmin und als Mitarbeiter, korrekte
-   Nav-Sichtbarkeit je Rolle, Redirect bei direktem Aufruf einer SuperAdmin-Route als
-   Mitarbeiter, Dark Mode und DE/EN-Umschaltung optisch geprüft (Screenshots). Details in
-   `frontend/README.md`.
+   persistiert), Dark Mode über `data-theme`-Attribut mit System-Fallback. Domänenansichten waren
+   zu diesem Zeitpunkt noch `PlaceholderPage`-Stubs — Routing/Guards/Nav bereits vollständig
+   verdrahtet. Getestet: 24 Unit-Tests, `pnpm build`/`pnpm lint` grün, zusätzlich end-to-end in
+   einem echten Chromium (Playwright) gegen einen echten laufenden Backend-/Postgres-Prozess
+   verifiziert (Login als SuperAdmin/Mitarbeiter, Nav-Sichtbarkeit je Rolle, Redirect bei
+   SuperAdmin-Route als Mitarbeiter, Dark Mode, DE/EN-Umschaltung).
+7b. **Frontend — Fachansichten** ✅ erledigt (bis auf Stationen/Transaktionen): fünf der sieben
+   Nav-Punkte sind jetzt echte, gegen die realen REST-Endpunkte des Backends verdrahtete Seiten
+   (`frontend/src/pages/`, `frontend/src/api/`), alle über TanStack Query:
+   - **Benutzer** — Liste, Anlegen (wählbare Zielrollen richten sich nach der Rolle des
+     angemeldeten Nutzers, spiegelt `ALLOWED_TARGET_ROLES` im Backend), Aktivieren/Deaktivieren.
+   - **Einstellungen** — Kategorien werden dynamisch aus `GET /settings` als Tabs gerendert (nicht
+     hartkodiert — serverseitig existieren bisher nur `citrineos` und `payment`), Schlüssel
+     hinzufügen/bearbeiten, Geheimnisse maskiert. Bewusst nicht gebaut: Rollback auf eine frühere
+     Version — dafür fehlt im Backend ein Endpoint, der die Versionshistorie überhaupt auflistet
+     (`POST /settings/rollback/:id` verlangt eine Versionsnummer "auf Verdacht"); vor einer
+     Rollback-UI müsste das Backend das erst nachliefern.
+   - **Testsuite** — Lauf starten, Läufe auflisten, Schritt-für-Schritt-Detailansicht, die während
+     `status: running` per Polling live aktualisiert (Ausführung läuft serverseitig im
+     Hintergrund).
+   - **Live-Monitor** — filterbare OCPP-Nachrichtenliste (5s-Polling), CSV-Export (Download über
+     den authentisierten Client als Blob, da ein reiner `<a href>` kein Bearer-Token mitschicken
+     kann).
+   - **Infrastruktur** — je eine Karte pro Whitelist-Dienst (Status, Logs auf Anfrage, Restart),
+     15s-Status-Polling.
+   - **Stationen/Transaktionen** bleiben `PlaceholderPage`-Stubs: sie brauchen den in §9/§10
+     entschiedenen Live-Lese-Pfad (GraphQL/Subscriptions gegen die eigene Hasura-Instanz), dessen
+     Client-Anbindung noch nicht existiert — bewusst nicht blind gebaut, da in dieser Sandbox nie
+     echte CitrineOS-Daten zum Testen verfügbar waren.
+
+   Neue UI-Primitiven: `Table`, `Select`, `Textarea`, `Dialog` (kapselt das native `<dialog>`-
+   Element für Fokus-Trap/Escape-to-close statt beides selbst zu bauen).
+
+   Getestet: 32 Unit-Tests (u. a. Settings-Gruppierung, Users-/Ops-Seiten gegen eine gemockte
+   API), `pnpm build`/`pnpm lint`/`pnpm typecheck:test` grün. Zusätzlich end-to-end gegen einen
+   echten laufenden Backend-/Postgres-Prozess verifiziert: einen echten Benutzer über den
+   Dialog angelegt und die Listenaktualisierung beobachtet, eine echte (vorbestehende)
+   Settings-Kategorie mit maskiertem Geheimnis angezeigt, einen echten Testsuite-Lauf gegen eine
+   absichtlich unkonfigurierte Station gestartet und die Schritt-Tabelle live per Polling
+   aktualisiert gesehen — inklusive des Klartext-Fehlers, mit dem jeder Schritt fehlschlug
+   ("CitrineOS connection is not configured yet…"), was bestätigt, dass die
+   Klartext-Fehler-Anforderung aus §9 tatsächlich bis in die UI durchschlägt, nicht nur in der
+   API-Antwort steckt. Leere Zustände für Settings/Testsuite/Monitor ohne Daten geprüft; die
+   Infrastruktur-Seite zeigt einen sauberen Fehlerzustand statt abzustürzen, wenn der Ops-Agent
+   nicht erreichbar ist (hier erwartet — kein Docker-Daemon in dieser Sandbox — vor
+   Produktivbetrieb gegen einen echten Ops-Agent erneut prüfen). Details in `frontend/README.md`.
 
 Jedes Inkrement wird einzeln committet und ist für sich lauffähig/testbar.

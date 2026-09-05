@@ -1,0 +1,26 @@
+{
+  "title": "Benutzer",
+  "table": {
+    "email": "E-Mail",
+    "role": "Rolle",
+    "status": "Status",
+    "createdAt": "Angelegt am",
+    "actions": "Aktionen"
+  },
+  "status": { "active": "Aktiv", "inactive": "Inaktiv" },
+  "actions": { "deactivate": "Deaktivieren", "activate": "Aktivieren", "newUser": "Neuer Benutzer" },
+  "form": {
+    "title": "Neuen Benutzer anlegen",
+    "email": "E-Mail-Adresse",
+    "password": "Initialpasswort",
+    "passwordHint": "Mindestens 12 Zeichen.",
+    "role": "Rolle",
+    "submit": "Anlegen",
+    "submitting": "Wird angelegt…"
+  },
+  "errors": {
+    "conflict": "Ein Benutzer mit dieser E-Mail existiert bereits.",
+    "generic": "Aktion fehlgeschlagen. Bitte erneut versuchen."
+  },
+  "empty": "Noch keine Benutzer angelegt."
+}

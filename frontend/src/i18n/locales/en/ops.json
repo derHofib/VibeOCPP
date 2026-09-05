@@ -1,0 +1,7 @@
+{
+  "title": "Infrastructure",
+  "lede": "Status, logs, and restart for a fixed list of known services — no arbitrary shell access.",
+  "state": { "running": "Running", "notFound": "Unreachable" },
+  "actions": { "restart": "Restart", "restarting": "Restarting…", "viewLogs": "View logs", "hideLogs": "Hide logs" },
+  "logsEmpty": "No logs available."
+}
