@@ -1,0 +1,84 @@
+{
+  "title": "Standorte",
+  "lede": "Standorte, Stationen und Ladepunkte vorab anlegen — mit ChargeBox-ID-Vorabvergabe.",
+  "tabs": {
+    "locations": "Standorte",
+    "unknownChargers": "Unknown Charger"
+  },
+  "empty": "Noch keine Standorte angelegt.",
+  "noStations": "Noch keine Stationen an diesem Standort.",
+  "noConnectors": "Noch keine Ladepunkte an dieser Station.",
+  "actions": {
+    "newLocation": "+ Standort",
+    "newStation": "+ Station",
+    "newConnector": "+ Ladepunkt",
+    "delete": "Löschen",
+    "assign": "Zuordnen",
+    "dismiss": "Ignorieren"
+  },
+  "status": {
+    "Planned": "Geplant",
+    "Linked": "Verbunden"
+  },
+  "location": {
+    "form": {
+      "title": "Neuer Standort",
+      "name": "Name",
+      "address": "Adresse",
+      "city": "Stadt",
+      "postalCode": "Postleitzahl",
+      "country": "Land",
+      "latitude": "Breitengrad",
+      "longitude": "Längengrad",
+      "submit": "Standort anlegen",
+      "submitting": "Wird angelegt…"
+    }
+  },
+  "station": {
+    "form": {
+      "title": "Neue Station",
+      "chargeboxId": "ChargeBox-ID (OCPP-Identität)",
+      "chargeboxIdHint": "Muss exakt der Identität entsprechen, mit der sich die Ladesäule verbindet.",
+      "label": "Bezeichnung",
+      "vendor": "Hersteller (optional)",
+      "model": "Modell (optional)",
+      "ocppVersion": "OCPP-Version",
+      "submit": "Station anlegen",
+      "submitting": "Wird angelegt…"
+    }
+  },
+  "connector": {
+    "form": {
+      "title": "Neuer Ladepunkt",
+      "label": "Bezeichnung",
+      "evseId": "EVSE-ID",
+      "connectorId": "Connector-ID",
+      "type": "Steckertyp",
+      "format": "Format",
+      "formatSocket": "Steckdose",
+      "formatCable": "Kabel (angeschlagen)",
+      "submit": "Ladepunkt anlegen",
+      "submitting": "Wird angelegt…"
+    }
+  },
+  "unknownCharger": {
+    "empty": "Keine unzugeordneten Ladestationen.",
+    "table": {
+      "chargeboxId": "ChargeBox-ID",
+      "firstSeen": "Zuerst gesehen",
+      "lastSeen": "Zuletzt gesehen",
+      "attempts": "Versuche",
+      "actions": "Aktionen"
+    },
+    "assignDialog": {
+      "title": "Unbekannte Ladestation zuordnen",
+      "chooseStation": "Bestehende Station wählen",
+      "hint": "Korrigiert die ChargeBox-ID der gewählten Station auf die tatsächlich verbundene ID.",
+      "submit": "Zuordnen"
+    }
+  },
+  "errors": {
+    "conflict": "Diese ChargeBox-ID ist bereits vergeben.",
+    "generic": "Etwas ist schiefgelaufen."
+  }
+}

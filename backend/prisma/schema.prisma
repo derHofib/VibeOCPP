@@ -28,6 +28,10 @@ model Tenant {
   auditLogs         AuditLog[]
   citrineOsMessages CitrineOsMessageLog[]
   testSuiteRuns     TestSuiteRun[]
+  locations         Location[]
+  plannedStations   PlannedStation[]
+  plannedConnectors PlannedConnector[]
+  unknownChargers   UnknownCharger[]
 
   @@map("tenants")
 }
@@ -253,6 +257,111 @@ model TestSuiteRun {
   // model/firmware/version combination.
   @@index([tenantId, manufacturer, model, firmwareVersion, ocppVersion])
   @@map("testsuite_run")
+}
+
+// Provisioning: Standort/Station/Ladepunkt planned here, ahead of any real
+// connection — see docs/architecture-proposal.md and the "Standort- &
+// Ladepunkt-Verwaltung" plan. CitrineOS never gets rows for these ahead of
+// time (its own ChargingStation/Evse/Connector tables are only populated by
+// a real BootNotification/StatusNotification — verified against
+// citrineos-core source), so this is VibeOCPP's own staging layer,
+// reconciled against CitrineOS purely by matching chargeboxId ==
+// ocppConnectionName once a station actually connects.
+model Location {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  name       String
+  address    String?
+  city       String?
+  postalCode String?
+  country    String?
+  latitude   Float?
+  longitude  Float?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  stations PlannedStation[]
+
+  @@map("locations")
+}
+
+enum PlannedStationStatus {
+  Planned
+  Linked
+
+  @@map("planned_station_status")
+}
+
+model PlannedStation {
+  id          String               @id @default(uuid())
+  tenantId    String
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+  locationId  String
+  location    Location             @relation(fields: [locationId], references: [id])
+  // The OCPP identity a real/simulated charge point authenticates as —
+  // CitrineOS calls this ocppConnectionName; we call it chargeboxId because
+  // that's the term the person provisioning a station actually uses.
+  chargeboxId String
+  label       String
+  vendor      String?
+  model       String?
+  ocppVersion String?
+  status      PlannedStationStatus @default(Planned)
+  linkedAt    DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  connectors PlannedConnector[]
+
+  @@unique([tenantId, chargeboxId])
+  @@map("planned_stations")
+}
+
+enum ConnectorFormat {
+  Socket
+  Cable
+
+  @@map("connector_format")
+}
+
+// A Ladepunkt: one EVSE, one connector, one plug type — the level
+// charging sessions get attributed to on the CitrineOS side (Evse +
+// Connector), not the station as a whole.
+model PlannedConnector {
+  id          String          @id @default(uuid())
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  stationId   String
+  station     PlannedStation  @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  label       String
+  evseId      Int
+  connectorId Int             @default(1)
+  type        String
+  format      ConnectorFormat
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([stationId, evseId, connectorId])
+  @@map("planned_connectors")
+}
+
+// One row per chargeboxId seen on a boot/status webhook event with no
+// matching PlannedStation — surfaced in the "Unknown Charger" tab instead
+// of silently joining the main stations list. Phase 1 has no access
+// control (securityProfile 0 stays open); this is visibility only.
+model UnknownCharger {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  chargeboxId  String
+  firstSeenAt  DateTime @default(now())
+  lastSeenAt   DateTime @updatedAt
+  attemptCount Int      @default(1)
+  dismissed    Boolean  @default(false)
+
+  @@unique([tenantId, chargeboxId])
+  @@map("unknown_chargers")
 }
 
 model TestSuiteStep {

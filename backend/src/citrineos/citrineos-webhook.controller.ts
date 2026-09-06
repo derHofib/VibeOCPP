@@ -4,6 +4,7 @@ import { CitrineOsMessageLogService } from './citrineos-message-log.service.js';
 import { CitrineOsConfigService } from './citrineos-config.service.js';
 import { TenantsService } from '../tenants/tenants.service.js';
 import { IncomingWebhookEventDto } from './dto/incoming-webhook-event.dto.js';
+import { StationReconciliationService } from '../locations/station-reconciliation.service.js';
 
 function secretsMatch(a: string, b: string): boolean {
   const bufA = Buffer.from(a);
@@ -32,6 +33,7 @@ export class CitrineOsWebhookController {
     private readonly messageLogService: CitrineOsMessageLogService,
     private readonly configService: CitrineOsConfigService,
     private readonly tenantsService: TenantsService,
+    private readonly reconciliation: StationReconciliationService,
   ) {}
 
   @Post('events')
@@ -44,6 +46,14 @@ export class CitrineOsWebhookController {
     }
 
     await this.messageLogService.record(tenant.id, dto);
+
+    // A BootNotification is the one message that reliably means "this
+    // chargeboxId is live right now" — everything else (StatusNotification,
+    // Heartbeat, ...) presupposes a station CitrineOS already accepted.
+    if (dto.info?.action === 'BootNotification') {
+      await this.reconciliation.reconcileIncomingConnection(tenant.id, dto.ocppConnectionName);
+    }
+
     return { status: 'ok' };
   }
 }

@@ -1,0 +1,84 @@
+{
+  "title": "Locations",
+  "lede": "Plan locations, stations and connectors ahead of time — with chargeboxId pre-assignment.",
+  "tabs": {
+    "locations": "Locations",
+    "unknownChargers": "Unknown Charger"
+  },
+  "empty": "No locations created yet.",
+  "noStations": "No stations at this location yet.",
+  "noConnectors": "No connectors on this station yet.",
+  "actions": {
+    "newLocation": "+ Location",
+    "newStation": "+ Station",
+    "newConnector": "+ Connector",
+    "delete": "Delete",
+    "assign": "Assign",
+    "dismiss": "Dismiss"
+  },
+  "status": {
+    "Planned": "Planned",
+    "Linked": "Linked"
+  },
+  "location": {
+    "form": {
+      "title": "New location",
+      "name": "Name",
+      "address": "Address",
+      "city": "City",
+      "postalCode": "Postal code",
+      "country": "Country",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "submit": "Create location",
+      "submitting": "Creating…"
+    }
+  },
+  "station": {
+    "form": {
+      "title": "New station",
+      "chargeboxId": "ChargeBox ID (OCPP identity)",
+      "chargeboxIdHint": "Must exactly match the identity the charge point connects as.",
+      "label": "Label",
+      "vendor": "Vendor (optional)",
+      "model": "Model (optional)",
+      "ocppVersion": "OCPP version",
+      "submit": "Create station",
+      "submitting": "Creating…"
+    }
+  },
+  "connector": {
+    "form": {
+      "title": "New connector",
+      "label": "Label",
+      "evseId": "EVSE ID",
+      "connectorId": "Connector ID",
+      "type": "Connector type",
+      "format": "Format",
+      "formatSocket": "Socket",
+      "formatCable": "Cable (attached)",
+      "submit": "Create connector",
+      "submitting": "Creating…"
+    }
+  },
+  "unknownCharger": {
+    "empty": "No unassigned chargers.",
+    "table": {
+      "chargeboxId": "ChargeBox ID",
+      "firstSeen": "First seen",
+      "lastSeen": "Last seen",
+      "attempts": "Attempts",
+      "actions": "Actions"
+    },
+    "assignDialog": {
+      "title": "Assign unknown charger",
+      "chooseStation": "Choose existing station",
+      "hint": "Corrects the chosen station's chargeboxId to the one that actually connected.",
+      "submit": "Assign"
+    }
+  },
+  "errors": {
+    "conflict": "That chargeboxId is already taken.",
+    "generic": "Something went wrong."
+  }
+}

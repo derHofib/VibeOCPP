@@ -2,6 +2,7 @@
   "appName": "VibeOCPP",
   "nav": {
     "dashboard": "Dashboard",
+    "locations": "Locations",
     "stations": "Charging Stations",
     "transactions": "Transactions",
     "testsuite": "Testsuite",

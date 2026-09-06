@@ -12,6 +12,7 @@ export interface NavItem {
 // call the page makes is re-checked server-side.
 export const NAV_ITEMS: NavItem[] = [
   { to: '/', labelKey: 'nav.dashboard' },
+  { to: '/locations', labelKey: 'nav.locations', requiredRole: 'Admin' },
   { to: '/stations', labelKey: 'nav.stations' },
   { to: '/transactions', labelKey: 'nav.transactions' },
   { to: '/testsuite', labelKey: 'nav.testsuite' },

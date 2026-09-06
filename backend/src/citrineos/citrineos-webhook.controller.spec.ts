@@ -4,6 +4,7 @@ import { CitrineOsWebhookController } from './citrineos-webhook.controller.js';
 import type { CitrineOsMessageLogService } from './citrineos-message-log.service.js';
 import type { CitrineOsConfigService } from './citrineos-config.service.js';
 import type { TenantsService } from '../tenants/tenants.service.js';
+import type { StationReconciliationService } from '../locations/station-reconciliation.service.js';
 
 function makeController(webhookSecret: string | null) {
   const record = vi.fn().mockResolvedValue(undefined);
@@ -14,8 +15,10 @@ function makeController(webhookSecret: string | null) {
   const tenantsService = {
     getDefaultTenant: vi.fn().mockResolvedValue({ id: 'tenant-1' }),
   } as unknown as TenantsService;
-  const controller = new CitrineOsWebhookController(messageLogService, configService, tenantsService);
-  return { controller, record };
+  const reconcileIncomingConnection = vi.fn().mockResolvedValue(undefined);
+  const reconciliation = { reconcileIncomingConnection } as unknown as StationReconciliationService;
+  const controller = new CitrineOsWebhookController(messageLogService, configService, tenantsService, reconciliation);
+  return { controller, record, reconcileIncomingConnection };
 }
 
 const EVENT = { ocppConnectionName: 'stationA', event: 'message' as const, message: '[2,"1","Heartbeat",{}]' };
@@ -52,5 +55,22 @@ describe('CitrineOsWebhookController', () => {
     const { controller, record } = makeController('short');
     await expect(controller.receiveEvent('a-much-longer-guess', EVENT)).rejects.toThrow(ForbiddenException);
     expect(record).not.toHaveBeenCalled();
+  });
+
+  it('reconciles the chargeboxId on a BootNotification event', async () => {
+    const { controller, reconcileIncomingConnection } = makeController('correct-secret');
+    const bootEvent = { ...EVENT, info: { action: 'BootNotification' } };
+
+    await controller.receiveEvent('correct-secret', bootEvent);
+
+    expect(reconcileIncomingConnection).toHaveBeenCalledWith('tenant-1', 'stationA');
+  });
+
+  it('does not reconcile for other event types', async () => {
+    const { controller, reconcileIncomingConnection } = makeController('correct-secret');
+
+    await controller.receiveEvent('correct-secret', EVENT);
+
+    expect(reconcileIncomingConnection).not.toHaveBeenCalled();
   });
 });

@@ -12,6 +12,8 @@ import { CitrineOsModule } from './citrineos/citrineos.module.js';
 import { TestSuiteModule } from './testsuite/testsuite.module.js';
 import { PaymentModule } from './payment/payment.module.js';
 import { OpsModule } from './ops/ops.module.js';
+import { LocationsModule } from './locations/locations.module.js';
+import { UnknownChargersModule } from './unknown-chargers/unknown-chargers.module.js';
 import { validateEnv } from './config/env.validation.js';
 
 @Module({
@@ -23,6 +25,8 @@ import { validateEnv } from './config/env.validation.js';
     AuthModule,
     UsersModule,
     SettingsModule,
+    LocationsModule,
+    UnknownChargersModule,
     CitrineOsModule,
     TestSuiteModule,
     PaymentModule,

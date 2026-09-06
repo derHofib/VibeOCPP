@@ -80,7 +80,7 @@ describe('CitrineOsDataApiService', () => {
 
     expect(request).toHaveBeenCalledWith(CONFIG.dataApiUrl, {
       method: 'GET',
-      path: '/data/ocpprouter/systemconfig',
+      path: '/data/ocpprouter/systemConfig',
       query: undefined,
       body: undefined,
     });

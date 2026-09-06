@@ -11,6 +11,7 @@ import { OpsPage } from './pages/ops-page.js';
 import { TestSuitePage } from './pages/testsuite-page.js';
 import { MonitorPage } from './pages/monitor-page.js';
 import { StationsPage } from './pages/stations-page.js';
+import { LocationsPage } from './pages/locations-page.js';
 
 export function App() {
   const { t } = useTranslation('common');
@@ -26,6 +27,14 @@ export function App() {
               <AppShell>
                 <Routes>
                   <Route path="/" element={<DashboardPage />} />
+                  <Route
+                    path="/locations"
+                    element={
+                      <ProtectedRoute requiredRole="Admin">
+                        <LocationsPage />
+                      </ProtectedRoute>
+                    }
+                  />
                   {/* Stations reads live CitrineOS data via our read-only
                       Hasura mirror (docs/architecture-proposal.md §9/§11
                       decision A, plan in docs/stations-feature-plan.md) —

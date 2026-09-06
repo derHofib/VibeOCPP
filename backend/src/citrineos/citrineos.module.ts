@@ -12,9 +12,10 @@ import { CitrineOsWebhookController } from './citrineos-webhook.controller.js';
 import { SettingsModule } from '../settings/settings.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { TenantsModule } from '../tenants/tenants.module.js';
+import { LocationsModule } from '../locations/locations.module.js';
 
 @Module({
-  imports: [SettingsModule, AuthModule, TenantsModule],
+  imports: [SettingsModule, AuthModule, TenantsModule, LocationsModule],
   controllers: [
     CitrineOsAdminController,
     CitrineOsCommandsController,
