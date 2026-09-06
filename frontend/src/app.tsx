@@ -10,6 +10,7 @@ import { SettingsPage } from './pages/settings-page.js';
 import { OpsPage } from './pages/ops-page.js';
 import { TestSuitePage } from './pages/testsuite-page.js';
 import { MonitorPage } from './pages/monitor-page.js';
+import { StationsPage } from './pages/stations-page.js';
 
 export function App() {
   const { t } = useTranslation('common');
@@ -25,15 +26,12 @@ export function App() {
               <AppShell>
                 <Routes>
                   <Route path="/" element={<DashboardPage />} />
-                  {/* Stations/Transactions read live CitrineOS data via our
-                      read-only Hasura mirror (docs/architecture-proposal.md
-                      §9/§11 decision A) — that GraphQL wiring isn't built
-                      yet, so these stay placeholders rather than shipping
-                      queries nobody has been able to run against real data. */}
-                  <Route
-                    path="/stations"
-                    element={<PlaceholderPage title={t('nav.stations')} description={t('nav.stations')} />}
-                  />
+                  {/* Stations reads live CitrineOS data via our read-only
+                      Hasura mirror (docs/architecture-proposal.md §9/§11
+                      decision A, plan in docs/stations-feature-plan.md) —
+                      list view only so far (no map/filters yet).
+                      Transactions still needs the same treatment. */}
+                  <Route path="/stations" element={<StationsPage />} />
                   <Route
                     path="/transactions"
                     element={<PlaceholderPage title={t('nav.transactions')} description={t('nav.transactions')} />}

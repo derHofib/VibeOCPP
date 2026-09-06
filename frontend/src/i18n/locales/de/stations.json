@@ -1,0 +1,28 @@
+{
+  "title": "Ladestationen",
+  "lede": "Live-Status direkt aus CitrineOS, nicht aus unserem Backend.",
+  "connection": { "connecting": "Verbinde…", "connected": "Live", "disconnected": "Verbindung getrennt" },
+  "table": {
+    "station": "Station",
+    "location": "Standort",
+    "status": "Status",
+    "connectors": "Connectors",
+    "vendorModel": "Hersteller / Modell",
+    "firmware": "Firmware"
+  },
+  "status": { "online": "Online", "offline": "Offline" },
+  "connectorStatus": {
+    "Available": "Verfügbar",
+    "Occupied": "Belegt",
+    "Reserved": "Reserviert",
+    "Unavailable": "Nicht verfügbar",
+    "Faulted": "Fehler",
+    "Preparing": "Wird vorbereitet",
+    "Charging": "Lädt",
+    "SuspendedEVSE": "Pausiert (Station)",
+    "SuspendedEV": "Pausiert (Fahrzeug)",
+    "Finishing": "Wird abgeschlossen"
+  },
+  "empty": "Keine Ladestationen gefunden.",
+  "noLocation": "Kein Standort hinterlegt"
+}

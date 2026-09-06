@@ -49,21 +49,37 @@ the full frontend architecture and build plan.
     carry the bearer token).
   - **Infrastructure** (`ops-page.tsx`) — one card per whitelisted service
     (status, logs on demand, restart), polling status every 15s.
-  - **Stations** and **Transactions** are still `PlaceholderPage` stubs —
-    see "Not done yet" below.
+  - **Stations** (`stations-page.tsx`) — the first view on the live-read
+    path (`docs/architecture-proposal.md` §9/§10 decision A): reads
+    directly from our own read-only Hasura mirror over a GraphQL
+    subscription, not from the backend. List only so far (no map, no
+    filters — see `docs/stations-feature-plan.md` for the rest). Shows a
+    connection indicator (connecting/live/disconnected) per the
+    no-polling requirement.
+  - **Transactions** is still a `PlaceholderPage` stub — needs the same
+    GraphQL wiring `stations-page.tsx` now provides, just not written yet.
 
 New UI primitives added alongside these: `Table`, `Select`, `Textarea`, and
 `Dialog` (wraps the native `<dialog>` element for its built-in focus trap
 and Escape-to-close rather than hand-rolling either).
 
-## Not done yet
+## GraphQL (Hasura live-read path)
 
-**Stations and Transactions** need the live-read path decided in
-`docs/architecture-proposal.md` §9/§10 (decision A: read directly from our
-own read-only Hasura mirror via GraphQL/subscriptions) — that client isn't
-wired up yet, so these two nav items stay placeholders rather than shipping
-GraphQL queries nobody has been able to run against real CitrineOS data in
-this environment.
+`src/lib/graphql-client.ts` + `src/lib/use-graphql-subscription.ts`:
+
+- `graphqlRequest()` — one-off queries via `graphql-request`, bearer token
+  attached the same way `lib/api-client.ts` does for REST.
+- `subscribe()` / `useGraphqlSubscription()` — live subscriptions via
+  `graphql-ws`. The websocket auth handshake follows Hasura's own
+  convention (`connectionParams: { headers: { Authorization: ... } }`),
+  not a `graphql-ws` default — verified against a real Hasura container,
+  see "Verified" below.
+- Both share the same access-token source as the REST client
+  (`AuthProvider` calls `configureGraphqlClient` alongside
+  `configureApiClient`) — one login, one token, two transports.
+- Reached at `/hasura/v1/graphql` (`vite.config.ts` proxies it to our own
+  Hasura instance, `ws: true` so the subscription upgrade forwards too),
+  configurable via `VITE_HASURA_URL` for production.
 
 ## Running
 
@@ -88,13 +104,34 @@ pnpm lint
 
 ## Verified
 
-Unit-tested (32 tests, all green): `cn` class merging, JWT decode/expiry,
+Unit-tested (47 tests, all green): `cn` class merging, JWT decode/expiry,
 role-rank comparison, settings grouped-by-category logic, the full
 `AuthProvider` login/refresh/logout/session-resume flow (mocked `fetch`),
 `ProtectedRoute` redirect and role-gating, `ThemeProvider`
-persistence/`data-theme` toggling, and the Users/Ops pages (list render,
-empty state, create/restart/view-logs actions) against a mocked API.
+persistence/`data-theme` toggling, the Users/Ops pages (list render, empty
+state, create/restart/view-logs actions) against a mocked API, the GraphQL
+client (auth header attachment, Hasura's connectionParams shape, one
+shared websocket client across subscriptions) and `useGraphqlSubscription`
+(connecting → connected/disconnected transitions, unsubscribe on unmount,
+re-subscribe on query/variable change) against a mocked `graphql-ws`.
 `pnpm build`, `pnpm typecheck:test`, and `pnpm lint` all clean.
+
+The GraphQL/Hasura path specifically was also verified against a **real**
+`hasura/graphql-engine:v2.40.3.cli-migrations-v3` container (no live
+CitrineOS in this environment, so a throwaway Postgres stub with the exact
+`ChargingStations`/`Locations`/`Evses`/`Connectors` schema and
+relationships from our own `hasura/metadata`, seeded with one station):
+a JWT shaped exactly like `AuthService`'s output authenticated both a
+plain HTTP query and a `graphql-ws` subscription using the project's own
+`STATIONS_LIST_SUBSCRIPTION` string and the exact `graphql-ws`/
+`graphql-request` versions pinned in `package.json`; updating the
+connector's `status` column directly in Postgres pushed a live update
+through the open subscription with no re-query, matching the "no
+polling" requirement. Then re-verified through the actual rendered
+`StationsPage` in a real browser (Chromium via Playwright) against that
+same Hasura container — the status badge changed live, with no page
+reload, confirming the whole path end to end rather than just the client
+library in isolation.
 
 Also verified end-to-end in a real browser (Chromium via Playwright)
 against a real running backend + local Postgres, not just unit-tested:

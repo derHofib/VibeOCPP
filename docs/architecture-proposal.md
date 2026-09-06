@@ -449,5 +449,30 @@ Alle übrigen Punkte oben sind die Arbeitsgrundlage für die Implementierung.
    Infrastruktur-Seite zeigt einen sauberen Fehlerzustand statt abzustürzen, wenn der Ops-Agent
    nicht erreichbar ist (hier erwartet — kein Docker-Daemon in dieser Sandbox — vor
    Produktivbetrieb gegen einen echten Ops-Agent erneut prüfen). Details in `frontend/README.md`.
+7c. **Frontend — Ladestationen (Live-Lese-Pfad)** ✅ erledigt für die Listenansicht, Rest gemäß
+   `docs/stations-feature-plan.md`: `frontend/src/lib/graphql-client.ts` +
+   `use-graphql-subscription.ts` sind die erste Anbindung an die eigene, read-only
+   Hasura-Instanz — `graphql-request` für einzelne Queries, `graphql-ws` für Live-Subscriptions,
+   beide über denselben Access-Token wie der REST-Client (`AuthProvider` ruft
+   `configureGraphqlClient` neben `configureApiClient`). Der WebSocket-Auth-Handshake folgt
+   Hasuras eigener Konvention (`connectionParams: { headers: { Authorization: ... } }`) — im
+   Code kommentiert, weil das kein `graphql-ws`-Standard ist, sondern Hasura-spezifisch.
+   `/stations` liest jetzt live aus `ChargingStations` (verschachtelt über `Evses` → `Connectors`,
+   da `ChargingStations` selbst keine direkte Connectors-Relation hat — gegen die echten
+   Hasura-Metadata-Dateien geprüft, nicht angenommen), mit sichtbarem
+   Verbindungsindikator (verbinde/live/getrennt) statt Polling. Nur die Listenansicht, noch ohne
+   Karte/Filter/Detailseite (siehe Plan). Transaktionen bleibt vorerst `PlaceholderPage`.
+
+   Getestet: 47 Unit-Tests insgesamt (u. a. GraphQL-Client-Header/Hasura-Connection-Params,
+   `useGraphqlSubscription`-Zustandsübergänge, gemockter `graphql-ws`). Zusätzlich — da in dieser
+   Sandbox nie eine echte CitrineOS-Instanz erreichbar war — gegen einen echten
+   `hasura/graphql-engine:v2.40.3.cli-migrations-v3`-Container verifiziert: ein
+   Postgres-Stub mit exakt dem Schema/den Relationen aus `hasura/metadata` für die vier
+   betroffenen Tabellen, eine JWT im echten `AuthService`-Format, die tatsächliche
+   `STATIONS_LIST_SUBSCRIPTION`-Query gegen die echten `graphql-ws`/`graphql-request`-Versionen
+   aus `package.json` — eine direkte Postgres-Änderung am Connector-Status kam ohne erneute
+   Anfrage live über die offene Subscription an, danach dasselbe noch einmal durch die tatsächlich
+   gerenderte `StationsPage` in einem echten Browser bestätigt (Status-Badge aktualisierte sich
+   ohne Reload). Details in `frontend/README.md` und `docs/stations-feature-plan.md`.
 
 Jedes Inkrement wird einzeln committet und ist für sich lauffähig/testbar.

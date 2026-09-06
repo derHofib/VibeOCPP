@@ -1,8 +1,9 @@
 # Ladestationen — Funktions- und Design-Plan
 
-Status: Planung, noch nicht umgesetzt. Grundlage für Inkrement 8 (siehe
-`architecture-proposal.md` §11). Löst die `PlaceholderPage` unter
-`frontend/src/pages/placeholder-page.tsx` für `/stations` ab.
+Status: Schritt 1 (GraphQL-Client) und Schritt 2 (Stationsliste, siehe §5)
+sind umgesetzt — Inkrement 7c in `architecture-proposal.md` §11. Schritte
+3–6 (Filter, Kartenansicht, Detailseite, fehlende Backend-Aktionen,
+Firmware-Rollout) stehen noch aus.
 
 ## 0. Woher die Daten kommen
 

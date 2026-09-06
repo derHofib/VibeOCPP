@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { publicApiFetch, configureApiClient, ApiError } from '../lib/api-client.js';
+import { configureGraphqlClient } from '../lib/graphql-client.js';
 import { decodeAccessToken, isExpired, type AccessTokenClaims } from '../lib/jwt.js';
 
 interface TokenPair {
@@ -103,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     configureApiClient({ getAccessToken, onUnauthorized: clearSession });
+    configureGraphqlClient({ getAccessToken });
   }, [getAccessToken, clearSession]);
 
   // On mount: silently try to resume a session from a stored refresh token

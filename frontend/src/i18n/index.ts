@@ -15,6 +15,8 @@ import monitorDe from './locales/de/monitor.json';
 import monitorEn from './locales/en/monitor.json';
 import opsDe from './locales/de/ops.json';
 import opsEn from './locales/en/ops.json';
+import stationsDe from './locales/de/stations.json';
+import stationsEn from './locales/en/stations.json';
 
 export const defaultNS = 'common';
 
@@ -31,6 +33,7 @@ void i18n
         testsuite: testsuiteDe,
         monitor: monitorDe,
         ops: opsDe,
+        stations: stationsDe,
       },
       en: {
         common: commonEn,
@@ -40,6 +43,7 @@ void i18n
         testsuite: testsuiteEn,
         monitor: monitorEn,
         ops: opsEn,
+        stations: stationsEn,
       },
     },
     // German is the product default per docs/architecture-proposal.md §9 —
@@ -48,7 +52,7 @@ void i18n
     fallbackLng: 'de',
     supportedLngs: ['de', 'en'],
     defaultNS,
-    ns: ['common', 'auth', 'users', 'settings', 'testsuite', 'monitor', 'ops'],
+    ns: ['common', 'auth', 'users', 'settings', 'testsuite', 'monitor', 'ops', 'stations'],
     interpolation: { escapeValue: false },
     detection: {
       order: ['localStorage', 'navigator'],

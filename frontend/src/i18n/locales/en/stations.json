@@ -1,0 +1,28 @@
+{
+  "title": "Charging Stations",
+  "lede": "Live status straight from CitrineOS, not from our backend.",
+  "connection": { "connecting": "Connecting…", "connected": "Live", "disconnected": "Connection lost" },
+  "table": {
+    "station": "Station",
+    "location": "Location",
+    "status": "Status",
+    "connectors": "Connectors",
+    "vendorModel": "Vendor / Model",
+    "firmware": "Firmware"
+  },
+  "status": { "online": "Online", "offline": "Offline" },
+  "connectorStatus": {
+    "Available": "Available",
+    "Occupied": "Occupied",
+    "Reserved": "Reserved",
+    "Unavailable": "Unavailable",
+    "Faulted": "Fault",
+    "Preparing": "Preparing",
+    "Charging": "Charging",
+    "SuspendedEVSE": "Suspended (station)",
+    "SuspendedEV": "Suspended (vehicle)",
+    "Finishing": "Finishing"
+  },
+  "empty": "No charging stations found.",
+  "noLocation": "No location set"
+}
