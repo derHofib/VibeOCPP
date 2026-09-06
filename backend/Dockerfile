@@ -15,12 +15,13 @@ COPY ops-agent/package.json ./ops-agent/
 # when present and is a silent no-op (not an error) when it's not, so this
 # still builds without it in every environment that isn't behind our proxy.
 COPY backend/ca-bundle.cr[t] ./
-# Placeholder manifest so pnpm can resolve the workspace without frontend's
-# full source (keeps this layer cacheable independent of it). ops-agent has
-# a real package.json above — it's a separate deployable with its own
-# Dockerfile, but pnpm still needs its manifest to resolve the workspace.
-RUN mkdir -p frontend \
-  && echo '{"name":"frontend","private":true}' > frontend/package.json
+# Just the manifest, not frontend's full source — keeps this layer cacheable
+# independent of frontend's source, but pnpm-lock.yaml is a workspace-wide
+# lockfile, so --frozen-lockfile needs frontend's real dependency specifiers
+# here to match it (a stubbed-out manifest drifts the moment frontend's
+# dependencies change).
+RUN mkdir -p frontend
+COPY frontend/package.json ./frontend/
 RUN if [ -f ./ca-bundle.crt ]; then export NODE_EXTRA_CA_CERTS="$(pwd)/ca-bundle.crt"; fi; \
     pnpm install --frozen-lockfile --filter backend...
 
@@ -36,6 +37,9 @@ WORKDIR /workspace/backend
 COPY --from=build /workspace/node_modules /workspace/node_modules
 COPY --from=build /workspace/backend/node_modules ./node_modules
 COPY --from=build /workspace/backend/dist ./dist
+# prisma/seed.ts imports straight from src/ (tsx runs it directly, not the
+# compiled dist/) rather than duplicating tenant/generated-client logic.
+COPY --from=build /workspace/backend/src ./src
 COPY --from=build /workspace/backend/prisma ./prisma
 COPY --from=build /workspace/backend/prisma.config.ts ./prisma.config.ts
 COPY --from=build /workspace/backend/package.json ./package.json

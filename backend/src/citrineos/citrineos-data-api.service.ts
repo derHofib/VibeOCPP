@@ -73,10 +73,12 @@ export class CitrineOsDataApiService {
     });
   }
 
-  // GET /data/<prefix>/systemconfig is exposed by every module with data
-  // endpoints (AbstractModule.registerSystemConfigRoutes) — cheap, always
-  // present, so it doubles as a connectivity check ("Verbindung testen").
+  // GET /data/<prefix>/systemConfig is exposed by every module with data
+  // endpoints (AbstractModuleApi._toDataPath lowercases only the namespace's
+  // first character, so "SystemConfig" becomes "systemConfig" — not fully
+  // lowercase) — cheap, always present, so it doubles as a connectivity
+  // check ("Verbindung testen").
   async ping(productTenantId: string): Promise<void> {
-    await this.request(productTenantId, 'GET', 'ocpprouter', 'systemconfig');
+    await this.request(productTenantId, 'GET', 'ocpprouter', 'systemConfig');
   }
 }

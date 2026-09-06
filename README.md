@@ -2,9 +2,12 @@
 
 Own CSMS (Charging Station Management System) backend and operator frontend
 built as a BFF/integration layer in front of [CitrineOS](https://citrineos.org)
-(Apache 2.0). CitrineOS runs unmodified as its own Docker Compose stack —
-this repo never forks or patches it and reaches it only through its public
-REST APIs and subscription/webhook mechanism.
+(Apache 2.0). `docker compose up --build` starts a complete, pre-configured
+CitrineOS-core instance alongside VibeOCPP — see
+[citrineos-vendor/README.md](citrineos-vendor/README.md). CitrineOS itself
+still runs entirely unmodified, on its own published images; this repo never
+forks or patches it and reaches it only through its public REST APIs and
+subscription/webhook mechanism.
 
 See [docs/architecture-proposal.md](docs/architecture-proposal.md) for the
 full architecture (service topology, data ownership, settings/secrets
@@ -37,13 +40,29 @@ docs/       Architecture proposal and other design docs
 Requires Node 22, pnpm (`corepack enable` picks up the pinned version), and
 either Docker or a local Postgres.
 
-**Docker Compose (backend + its own database):**
+**Docker Compose (backend, its own database, and a bundled CitrineOS-core):**
 
 ```sh
 cp .env.example .env   # fill in real secrets — see comments in the file
 docker compose up --build
 curl http://localhost:3000/health
 ```
+
+This single command also brings up CitrineOS-core (citrine, its Postgres,
+RabbitMQ, MinIO, and its own Hasura instance — see
+[citrineos-vendor/README.md](citrineos-vendor/README.md)) and configures the
+connection between it and VibeOCPP automatically: the `citrineos-config-init`
+job waits for both to be healthy, then writes `settings/citrineos/*` via the
+Settings API as the seeded SuperAdmin — the manual `curl` steps this README
+used to require are gone. It's idempotent, so re-running `docker compose up`
+never duplicates or fails.
+
+To point VibeOCPP at an existing CitrineOS deployment instead of the bundled
+one, remove (or empty) `COMPOSE_PROFILES=citrineos-core` in your `.env` —
+this disables the `citrine`/`ocpp-db`/`amqp-broker`/`minio`/`graphql-engine`/
+`citrineos-config-init` services — and configure
+`settings/citrineos/dataApiUrl`+`messageApiUrl` yourself (see the manual
+steps below).
 
 **Local development, without Docker:**
 
@@ -65,7 +84,9 @@ pnpm dev
 ```
 
 Before any `/citrineos/*` endpoint works, configure the connection as SuperAdmin
-(there is no UI yet — use the settings API directly):
+(there is no UI yet — use the settings API directly). Skip this when using the
+bundled CitrineOS-core from `docker compose up` above — `citrineos-config-init`
+already did it:
 
 ```sh
 TOKEN=$(curl -s -X POST localhost:3000/auth/login \

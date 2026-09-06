@@ -10,12 +10,14 @@ ARG HTTPS_PROXY=""
 ARG NODE_EXTRA_CA_CERTS=""
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY ops-agent/package.json ./ops-agent/
+COPY backend/package.json ./backend/
+COPY frontend/package.json ./frontend/
 COPY backend/ca-bundle.cr[t] ./
-# Placeholder manifests so pnpm can resolve the workspace without the other
-# packages' full source (keeps this layer cacheable independent of them).
-RUN mkdir -p frontend backend \
-  && echo '{"name":"frontend","private":true}' > frontend/package.json \
-  && echo '{"name":"backend","private":true}' > backend/package.json
+# Just the manifests, not the other packages' full source — keeps this layer
+# cacheable independent of their source, but pnpm-lock.yaml is a
+# workspace-wide lockfile, so --frozen-lockfile needs their real dependency
+# specifiers here to match it (a stubbed-out manifest drifts the moment
+# either package's dependencies change).
 RUN if [ -f ./ca-bundle.crt ]; then export NODE_EXTRA_CA_CERTS="$(pwd)/ca-bundle.crt"; fi; \
     pnpm install --frozen-lockfile --filter ops-agent...
 
