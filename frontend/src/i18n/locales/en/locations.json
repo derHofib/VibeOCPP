@@ -61,6 +61,27 @@
       "submitting": "Creating…"
     }
   },
+  "parameters": {
+    "show": "Show parameters",
+    "hide": "Hide parameters",
+    "title": "Enter on the charge point",
+    "serverUrl": "Server URL (central system)",
+    "serverUrlHint": "Base address without the charge point ID",
+    "chargePointId": "Charge point ID",
+    "chargePointIdHint": "The charger's identity — enter exactly as shown, case-sensitive",
+    "fullUrl": "Full URL",
+    "fullUrlHint": "For chargers with a single URL field",
+    "ocppVersion": "OCPP version",
+    "ocppVersionAny": "any (1.6, 2.0.1 or 2.1)",
+    "subprotocolHint": "WebSocket subprotocol, if the charger asks for one",
+    "securityProfile": "Security profile",
+    "securityProfile0": "0 — no authentication",
+    "securityProfileHint": "Leave username and password empty on the charger",
+    "connectors": "Connectors — how the charger must report them",
+    "connector": "Connector",
+    "copy": "Copy",
+    "copied": "Copied"
+  },
   "unknownCharger": {
     "empty": "No unassigned chargers.",
     "table": {

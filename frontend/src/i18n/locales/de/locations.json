@@ -61,6 +61,27 @@
       "submitting": "Wird angelegt…"
     }
   },
+  "parameters": {
+    "show": "Parametrierung anzeigen",
+    "hide": "Parametrierung ausblenden",
+    "title": "An der Ladesäule eintragen",
+    "serverUrl": "Server-URL (Zentrale)",
+    "serverUrlHint": "Basis-Adresse ohne Charge-Point-ID",
+    "chargePointId": "Charge-Point-ID",
+    "chargePointIdHint": "Identität der Säule — exakt so eintragen, Groß-/Kleinschreibung beachten",
+    "fullUrl": "Vollständige URL",
+    "fullUrlHint": "Für Säulen mit nur einem URL-Feld",
+    "ocppVersion": "OCPP-Version",
+    "ocppVersionAny": "beliebig (1.6, 2.0.1 oder 2.1)",
+    "subprotocolHint": "WebSocket-Subprotokoll, falls die Säule danach fragt",
+    "securityProfile": "Sicherheitsprofil",
+    "securityProfile0": "0 — keine Authentifizierung",
+    "securityProfileHint": "Benutzername und Passwort an der Säule leer lassen",
+    "connectors": "Ladepunkte — so muss die Säule sie melden",
+    "connector": "Connector",
+    "copy": "Kopieren",
+    "copied": "Kopiert"
+  },
   "unknownCharger": {
     "empty": "Keine unzugeordneten Ladestationen.",
     "table": {

@@ -14,6 +14,7 @@ import {
   type StationRow,
 } from '../api/locations.js';
 import { ApiError } from '../lib/api-client.js';
+import { StationParametersPanel } from '../components/stations/station-parameters-panel.js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card.js';
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '../components/ui/table.js';
 import { StatusBadge } from '../components/ui/status-badge.js';
@@ -327,6 +328,10 @@ function CreateConnectorDialog({
 
 function StationBlock({ station, onAddConnector }: { station: StationRow; onAddConnector: () => void }) {
   const { t } = useTranslation('locations');
+  // A station that has never connected is still waiting to be set up on
+  // the charger, so its parameters start visible; a linked one is done.
+  const [parametersOpen, setParametersOpen] = useState(station.status === 'Planned');
+  const panelId = `station-parameters-${station.id}`;
   return (
     <div className="rounded-md border border-border p-3">
       <div className="flex items-center justify-between gap-2">
@@ -338,12 +343,25 @@ function StationBlock({ station, onAddConnector }: { station: StationRow; onAddC
           <StatusBadge tone={station.status === 'Linked' ? 'success' : 'neutral'}>
             {t(`status.${station.status}`)}
           </StatusBadge>
+          <Button
+            size="sm"
+            variant="outline"
+            aria-expanded={parametersOpen}
+            aria-controls={panelId}
+            onClick={() => setParametersOpen((open) => !open)}
+          >
+            {parametersOpen ? t('parameters.hide') : t('parameters.show')}
+          </Button>
           <Button size="sm" variant="outline" onClick={onAddConnector}>
             {t('actions.newConnector')}
           </Button>
         </div>
       </div>
-      {station.connectors.length === 0 ? (
+      {parametersOpen ? (
+        // The panel already lists every connector with its EVSE/connector
+        // ids, so the compact summary below would only repeat it.
+        <StationParametersPanel station={station} id={panelId} />
+      ) : station.connectors.length === 0 ? (
         <p className="mt-2 text-xs text-text-muted">{t('noConnectors')}</p>
       ) : (
         <ul className="mt-2 flex flex-wrap gap-2">

@@ -81,6 +81,27 @@ and Escape-to-close rather than hand-rolling either).
   Hasura instance, `ws: true` so the subscription upgrade forwards too),
   configurable via `VITE_HASURA_URL` for production.
 
+## Station parameters (`/locations`)
+
+Every station on the Standorte page has a collapsible "Parametrierung" panel
+with what has to be entered on the charge point itself: server URL, charge
+point ID, full URL, OCPP version/subprotocol, security profile, and the
+EVSE/connector numbering it must report. Each value has a copy button.
+Stations that never connected (`Planned`) start expanded; linked ones start
+collapsed.
+
+The backend never sees the public OCPP address (CitrineOS reaches it as
+`citrine:8080` inside Docker), so `src/lib/station-parameters.ts` derives it
+from the host the UI is opened on: `ws://<that host>:8081`, 8081 being
+CitrineOS's unauthenticated listener. Override for deployments where the
+charger reaches the CSMS under a different address:
+
+- `VITE_OCPP_WS_URL` — full base URL, e.g. `wss://csms.example.com:443`
+- `VITE_OCPP_WS_PORT` — only the port (default `8081`), host still derived
+
+Copying falls back to `document.execCommand` because `navigator.clipboard`
+does not exist over plain `http://` on a LAN address.
+
 ## Running
 
 ```sh

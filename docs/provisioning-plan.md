@@ -37,6 +37,10 @@ CitrineOS' eigene Tabellen geschrieben.
   ChargeBox-ID einer bestehenden Station) oder Ignorieren
 - Frontend: `/locations` (Admin+) mit Reitern "Standorte" und
   "Unknown Charger"
+- Pro Station ein einblendbares Parametrierungs-Panel (Server-URL,
+  Charge-Point-ID, vollständige URL, OCPP-Version/Subprotokoll,
+  Sicherheitsprofil, erwartete EVSE-/Connector-Nummerierung) mit
+  Kopieren-Buttons — geplante Stationen starten ausgeklappt
 - Keine technische Zugriffskontrolle — jede ChargeBox-ID kommt weiterhin
   durch (`securityProfile 0`), Unknown Charger ist reine Sichtbarkeit
 
